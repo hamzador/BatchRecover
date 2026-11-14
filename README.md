@@ -4,7 +4,7 @@
 
 BatchRecover is a proposed Java library for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: design / pre-alpha. No implementation or published Maven artifact yet. API examples describe intended behavior, not supported functionality.
+> Status: design / pre-alpha. Initial build scaffold and domain types are under development; no recovery implementation or published Maven artifact yet. API examples describe intended behavior, not supported functionality.
 
 ## Why?
 
@@ -51,7 +51,7 @@ The application supplies a stable source record identity, a safe versioned paylo
 
 ## Development
 
-Build tooling is planned as Maven, JUnit 5, Mockito, Testcontainers PostgreSQL and GitHub Actions. Once the build exists, the expected command is `./mvnw verify`.
+Build tooling is planned as Maven, JUnit Jupiter 6, Mockito, Testcontainers PostgreSQL and GitHub Actions. Run `./mvnw test` for unit tests or `./mvnw -B clean verify` with Docker for the full reactor and integration smoke test. See [development setup](docs/development.md).
 
 The proposed Maven namespace is `io.github.hamzador` (ownership and publication still to be verified). Apache-2.0 is a proposed license; no license has been adopted yet.
 
