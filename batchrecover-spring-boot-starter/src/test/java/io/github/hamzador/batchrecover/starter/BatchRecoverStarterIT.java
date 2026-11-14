@@ -6,6 +6,13 @@ import io.github.hamzador.batchrecover.core.port.RecoveryHandler;
 import io.github.hamzador.batchrecover.core.service.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.job.JobInstance;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.scope.context.StepSynchronizationManager;
+import org.springframework.batch.core.step.StepExecution;
+import io.github.hamzador.batchrecover.springbatch.ClassifiedError;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -51,10 +58,23 @@ class BatchRecoverStarterIT {
                     .run(context -> {
                         assertThat(context).hasNotFailed().hasSingleBean(BatchRecoverListenerFactory.class);
                         var service = context.getBean(RejectionService.class);
-                        var request = new CaptureRequest(new RejectionIdentity("starter-it", 1, "import", "row:1"),
-                                2, 3, "customer", "INVALID", ErrorCategory.BUSINESS,
-                                new ReplayPayload("customer", 1, "fixed"), 3);
-                        var captured = new TransactionTemplate(manager).execute(tx -> service.captureInExistingTransaction(request));
+                        var listener = context.getBean(BatchRecoverListenerFactory.class)
+                                .<String, String>create("customer", item -> "row:1", codec,
+                                        failure -> new ClassifiedError("INVALID", ErrorCategory.BUSINESS));
+                        var job = new JobExecution(2L, new JobInstance(1L, "import"),
+                                new JobParametersBuilder().toJobParameters());
+                        var step = new StepExecution(3L, "import", job);
+                        StepSynchronizationManager.register(step);
+                        try {
+                            new TransactionTemplate(manager).executeWithoutResult(tx ->
+                                    listener.onSkipInProcess("fixed", new IllegalArgumentException()));
+                        } finally {
+                            StepSynchronizationManager.close();
+                        }
+                        UUID id = jdbc.queryForObject("SELECT id FROM br_rejection", UUID.class);
+                        var captured = service.get(id);
+                        assertThat(captured.identity().applicationScope()).isEqualTo("starter-it");
+                        assertThat(captured.maxAttempts()).isEqualTo(3);
                         service.queue(captured.id(), captured.version(), "operator", "replay");
                         assertThat(context.getBean(BatchRecoverWorker.class).runOnce()).isEqualTo(RecoveryResult.RECOVERED);
                         assertThat(jdbc.queryForObject("SELECT count(*) FROM starter_effect", Integer.class)).isEqualTo(1);

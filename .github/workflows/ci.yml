@@ -26,6 +26,8 @@ jobs:
           cache: maven
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
+      - name: Test dependency audit script
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Generate dependency SBOM
         run: >
           ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
@@ -36,7 +38,7 @@ jobs:
       - name: Validate local release staging (no upload)
         run: python3 scripts/stage_release.py
       - name: Publish coverage summary
-        run: python3 scripts/coverage_summary.py batchrecover-coverage/target/site/jacoco-aggregate/jacoco.xml >> "$GITHUB_STEP_SUMMARY"
+        run: python3 scripts/coverage_summary.py batchrecover-coverage/target/site/jacoco-aggregate/jacoco.xml | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload quality and staging artifacts
         if: always()
         uses: actions/upload-artifact@v4
