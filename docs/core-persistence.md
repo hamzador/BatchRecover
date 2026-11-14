@@ -6,11 +6,11 @@ The database unique constraint resolves concurrent capture; duplicates return th
 
 Corrections require PENDING status, the same payload type and an expected version. They append a revision and audit; schema version may evolve. Queue and discard are explicit, versioned operations. The repository enforces compare-and-set independently of the service's pre-check. A database failure rolls back all changes; outer same-DataSource JDBC transactions are joined (REQUIRED), not suspended. Payload revision foreign key is deferred to commit.
 
-The transition graph includes the planned worker transitions, but only capture, correction, queue and discard can currently be persisted. Worker operations are implemented separately in M3; see [recovery engine](recovery-engine.md). RetryPolicy supports bounded equal jitter. Host callers must sanitize actor/reason/error codes, approve payloads, enforce authorization and validate business content. Payload size/UTF-8 validity and type consistency are checked, but this is not a secret scanner.
+The transition graph and worker transitions are implemented; see [recovery engine](recovery-engine.md). RetryPolicy supports bounded equal jitter. Host callers must sanitize actor/reason/error codes, approve payloads, enforce authorization and validate business content. Payload size/UTF-8 validity and type consistency are checked, but this is not a secret scanner.
 
 ## Migration
 
-Apply `db/batchrecover/V1__create_batchrecover_tables.sql` explicitly, using a dedicated migration history to avoid collisions with host migrations. PostgreSQL 16 is the tested target. No automatic schema initialization. A fresh database and transaction rollback are exercised by Testcontainers.
+For PostgreSQL apply `db/batchrecover/V1__create_batchrecover_tables.sql` and `db/batchrecover/V2__scope_worker_indexes.sql` explicitly, using a dedicated migration history to avoid collisions with host migrations. PostgreSQL 16 is the tested target. No automatic schema initialization. A fresh database and transaction rollback are exercised by Testcontainers.
 
 ## Testing
 
@@ -31,3 +31,5 @@ service.queue(corrected.id(), corrected.version(), "operator", "request replay")
 ```
 
 Queueing alone does not execute the handler; call the recovery engine from a host-managed worker.
+
+For nontransactional memory storage and capability differences, see [storage](storage.md).

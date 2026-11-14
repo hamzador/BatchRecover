@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.hamzador</groupId>
+        <artifactId>batchrecover-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>batchrecover-storage-memory</artifactId>
+    <name>batchrecover-storage-memory</name>
+    <description>Bounded, volatile Java-only storage</description>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.hamzador</groupId>
+            <artifactId>batchrecover-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.hamzador</groupId>
+            <artifactId>batchrecover-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

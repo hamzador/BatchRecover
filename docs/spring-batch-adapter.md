@@ -9,3 +9,7 @@ VersionedPayloadCodec supports explicit decoders per schema version and a curren
 See the example README for a runnable demo. The CI integration suite verifies 90 successes/10 captures, real fatal-writer rollback and restart, previous committed chunks, no capture for filter/retry success, fail-closed storage, and absence of capture without listener registration. JDBC integration tests additionally assert mandatory transaction enforcement and duplicate identity concurrency. Replay and worker state transitions are implemented in M3; see [recovery engine](recovery-engine.md).
 
 Reference: [Spring Batch 6.0 migration guide](https://github.com/spring-projects/spring-batch/wiki/Spring-Batch-6.0-Migration-Guide) and [6.0.6 ChunkOrientedStep source](https://github.com/spring-projects/spring-batch/blob/v6.0.6/spring-batch-core/src/main/java/org/springframework/batch/core/step/item/ChunkOrientedStep.java).
+
+## Optional memory mode
+
+The original transactional listener constructor remains the default. Explicit memory mode uses `CaptureSettings(..., false)` via the starter factory; it captures observed processor skips without a transaction and cannot guarantee rollback or durability. Use only a one-shot job and explicitly approve safe replay after completion. See [storage architecture](storage.md).

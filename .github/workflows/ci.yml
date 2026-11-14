@@ -26,6 +26,8 @@ jobs:
           cache: maven
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
+      - name: Verify standalone memory consumer dependencies
+        run: python3 scripts/check_memory_consumer.py
       - name: Test dependency audit script
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Generate dependency SBOM

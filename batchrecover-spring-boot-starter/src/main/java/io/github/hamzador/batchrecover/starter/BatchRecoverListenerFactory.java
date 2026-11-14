@@ -23,6 +23,7 @@ public final class BatchRecoverListenerFactory {
     public <I,O> RecoverableSkipListener<I,O> create(String handlerId, RecordIdentity<I> identity,
                                                     PayloadCodec<I> codec, ErrorClassifier classifier) {
         return new RecoverableSkipListener<>(service, resolver, identity, codec, classifier,
-                new CaptureSettings(properties.applicationScope(), handlerId, properties.maxAttempts()));
+                new CaptureSettings(properties.applicationScope(), handlerId, properties.maxAttempts(),
+                        properties.storage().type() != BatchRecoverProperties.StorageType.MEMORY));
     }
 }

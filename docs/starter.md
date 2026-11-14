@@ -10,12 +10,14 @@ Tested target: Java 21, Spring Boot 4.0.9, Spring Batch 6.0.6, PostgreSQL 16. Ot
 </dependency>
 ```
 
-The host supplies its Spring Batch JDBC job repository, PostgreSQL driver, DataSource and the same JdbcTransactionManager used by the chunk. Boot may supply that manager if JDBC auto-configuration is present; verify it is the intended manager. A generic JPA manager is not supported by this first version. With multiple managers, explicitly select the primary compatible one or provide both repository ports; the starter fails startup rather than silently choosing an ambiguous manager. Apply V1 and V2 with the host migration tool before enabling the starter. No automatic migration is performed. Keep batchrecover tables protected by host authorization and data retention.
+For JDBC mode, explicitly add the batchrecover-storage-jdbc artifact at the same version (it is no longer transitive through the starter). The host supplies its Spring Batch JDBC job repository, PostgreSQL driver, DataSource and the same JdbcTransactionManager used by the chunk. Boot may supply that manager if JDBC auto-configuration is present; verify it is the intended manager. A generic JPA manager is not supported by this first version. With multiple managers, explicitly select the primary compatible one or provide both repository ports; the starter fails startup rather than silently choosing an ambiguous manager. Apply V1 and V2 with the host migration tool before enabling the starter. No automatic migration is performed. Keep batchrecover tables protected by host authorization and data retention.
 
 ```yaml
 batchrecover:
   enabled: true
   application-scope: customer-app
+  storage:
+    type: jdbc
   max-attempts: 3
   lease-duration: 30s
   initial-retry-delay: 1s
@@ -34,6 +36,10 @@ batchrecover:
 | metrics-enabled | true | Record worker metrics if a unique or primary MeterRegistry exists |
 
 Use typed duration syntax with a unit. No jobs, worker threads, scheduling or listener registration are automatically started. No database connection is opened by BatchRecover during bean creation. The application must provide the same transaction manager for both capture and worker JDBC writes. Custom repository implementations must implement both ports and uphold the transaction/fencing contract. A custom RejectionService, RecoveryEngine, registry, listener factory or worker bean can replace the default.
+
+## Storage selection
+
+The default when enabled remains JDBC for compatibility; use `storage.type: memory` explicitly for a one-shot JVM without a database. Memory does not share chunk transaction rollback, loses history at JVM exit and fails at its configured capacity limits. For custom ports, use `storage.type: custom`. See [storage capabilities, limits and configuration](storage.md). JDBC never falls back to memory. The no-database mode has a real resourceless Spring Batch integration test.
 
 ## Register a typed handler and listener
 

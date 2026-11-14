@@ -4,7 +4,7 @@
 
 BatchRecover is a Java library under development for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: pre-release development. Core, processor-skip capture and local JDBC recovery are implemented; the starter and release preparation are under review. No published Maven artifact yet.
+> Status: pre-release development. Core, processor-skip capture, local JDBC recovery and the opt-in starter are implemented; generic bounded memory storage is under review. No published Maven artifact yet.
 
 ## Why?
 
@@ -13,10 +13,10 @@ A batch may complete with skipped records. Restarting a failed job and recoverin
 ## First release (0.1.0)
 
 - Java 21, Maven multi-module, Spring Boot 4.0.9 / Spring Batch 6.0.6 and PostgreSQL 16.
-- PostgreSQL / Spring JDBC; capture processor skips on explicitly opted-in chunk steps.
+- Optional bounded in-memory storage (single JVM) or PostgreSQL / Spring JDBC; explicitly opted-in processor skips.
 - Durable rejection identity, immutable original payload, explicit correction and revision history.
 - Explicit, application-owned typed replay handlers; retry limits, lease-based claims and audit trail.
-- Local Java API first. REST and Angular dashboard follow once recovery semantics are proven.
+- Local Java API only. No web stack or ORM required.
 
 Read and write skips, distributed steps, cross-database transactions, external side effects and compatibility with Spring Batch 5.2 are separate follow-up milestones. Payload capture is opt-in. No claim of exactly-once external effects.
 
@@ -28,6 +28,7 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Spring Batch adapter and example](docs/spring-batch-adapter.md)
 - [Recovery engine](docs/recovery-engine.md)
 - [Spring Boot starter and configuration](docs/starter.md)
+- [Storage architecture and capabilities](docs/storage.md)
 - [Release preparation and remaining gates](docs/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 

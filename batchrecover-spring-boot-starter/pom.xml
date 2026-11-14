@@ -15,8 +15,14 @@
     <dependencies>
         <dependency>
             <groupId>io.github.hamzador</groupId>
+            <artifactId>batchrecover-storage-memory</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.hamzador</groupId>
             <artifactId>batchrecover-storage-jdbc</artifactId>
             <version>${project.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.github.hamzador</groupId>

@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>io.github.hamzador</groupId>
+            <artifactId>batchrecover-storage-jdbc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.hamzador</groupId>
             <artifactId>batchrecover-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
