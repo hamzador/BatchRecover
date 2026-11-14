@@ -18,3 +18,7 @@ SELECT count(*) FROM br_audit_event; -- 10
 ```
 
 The integration tests use temporary PostgreSQL Testcontainers and verify actual job execution, rollback, restart, retry/filter behavior, storage errors and opt-in. No external database is touched by tests.
+
+## Targeted recovery
+
+On a fresh disposable database add `--recover-three` to the `--init` command. After normal import the example corrects and queues three rejected customers, runs workers locally and reports 93 total customers with 7 pending rejections. The original Spring Batch job is not restarted. V2 is applied alongside V1 during explicit initialization. Existing demo databases require V2 before use.

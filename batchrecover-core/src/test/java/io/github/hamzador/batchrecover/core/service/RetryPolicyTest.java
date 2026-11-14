@@ -15,6 +15,14 @@ class RetryPolicyTest {
     }
 
     @Test
+    void shouldApplyEqualJitterWithinCappedDelay() {
+        var policy = new RetryPolicy(Duration.ofMillis(100), Duration.ofMillis(500));
+        assertEquals(Duration.ofMillis(50), policy.delayWithJitter(1, 0));
+        assertEquals(Duration.ofMillis(500), policy.delayWithJitter(10, Math.nextDown(1.0)));
+        assertThrows(IllegalArgumentException.class, () -> policy.delayWithJitter(1, 1.0));
+    }
+
+    @Test
     void shouldRejectInvalidAttemptNumber() {
         var policy = new RetryPolicy(Duration.ofSeconds(1), Duration.ofSeconds(5));
         assertThrows(IllegalArgumentException.class, () -> policy.delayAfter(0));

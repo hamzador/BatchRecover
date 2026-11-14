@@ -6,7 +6,7 @@ The database unique constraint resolves concurrent capture; duplicates return th
 
 Corrections require PENDING status, the same payload type and an expected version. They append a revision and audit; schema version may evolve. Queue and discard are explicit, versioned operations. The repository enforces compare-and-set independently of the service's pre-check. A database failure rolls back all changes; outer same-DataSource JDBC transactions are joined (REQUIRED), not suspended. Payload revision foreign key is deferred to commit.
 
-The transition graph includes the planned worker transitions, but only capture, correction, queue and discard can currently be persisted. Worker claim, lease and attempt writes are deferred to M3. RetryPolicy calculates bounded deterministic exponential delay; the future worker applies jitter. Host callers must sanitize actor/reason/error codes, approve payloads, enforce authorization and validate business content. Payload size/UTF-8 validity and type consistency are checked, but this is not a secret scanner.
+The transition graph includes the planned worker transitions, but only capture, correction, queue and discard can currently be persisted. Worker operations are implemented separately in M3; see [recovery engine](recovery-engine.md). RetryPolicy supports bounded equal jitter. Host callers must sanitize actor/reason/error codes, approve payloads, enforce authorization and validate business content. Payload size/UTF-8 validity and type consistency are checked, but this is not a secret scanner.
 
 ## Migration
 
@@ -30,4 +30,4 @@ var corrected = service.correct(rejection.id(), rejection.version(),
 service.queue(corrected.id(), corrected.version(), "operator", "request replay");
 ```
 
-Queueing does not execute the handler yet.
+Queueing alone does not execute the handler; call the recovery engine from a host-managed worker.

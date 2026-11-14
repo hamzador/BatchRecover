@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Attempt model reserved for the recovery coordinator milestone. */
+/** Attempt starts with RUNNING and can be finalized exactly once by its fencing token. */
 public record RecoveryAttempt(UUID id, UUID rejectionId, int revision, int attemptNumber,
                               UUID leaseToken, Instant startedAt, Instant finishedAt,
                               AttemptOutcome outcome, String errorCode) {
