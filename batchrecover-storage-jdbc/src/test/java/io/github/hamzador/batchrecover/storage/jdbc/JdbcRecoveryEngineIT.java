@@ -2,6 +2,7 @@ package io.github.hamzador.batchrecover.storage.jdbc;
 
 import io.github.hamzador.batchrecover.core.domain.*;
 import io.github.hamzador.batchrecover.core.exception.RecoveryValidationException;
+import io.github.hamzador.batchrecover.core.exception.CorrectionRequiredException;
 import io.github.hamzador.batchrecover.core.port.RecoveryHandler;
 import io.github.hamzador.batchrecover.core.codec.VersionedPayloadCodec;
 import io.github.hamzador.batchrecover.core.service.*;
@@ -175,13 +176,11 @@ class JdbcRecoveryEngineIT {
     @Test
     void shouldNotReapExpiredLeaseWhileExecutionHoldsRowLock() throws Exception {
         var r = queued("app", "row:1", 3);
-        var claim = repository.claimNext("app", LEASE).orElseThrow();
+        var claim = repository.claimNext("app", Duration.ofSeconds(4)).orElseThrow();
         var started = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         try (var pool = Executors.newSingleThreadExecutor()) {
             var result = pool.submit(() -> repository.execute(claim, work -> {
-                // Simulate expiry during execution under the same row lock.
-                expire(r.id());
                 started.countDown();
                 try {
                     if (!release.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("timeout");
@@ -193,6 +192,15 @@ class JdbcRecoveryEngineIT {
             }));
             try {
                 assertTrue(started.await(10, TimeUnit.SECONDS));
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(8);
+                // A separate connection must see the committed lease actually expire while
+                // execution holds the lock. An uncommitted UPDATE would not prove this.
+                while (!Boolean.TRUE.equals(jdbc.queryForObject(
+                        "SELECT lease_expires_at <= clock_timestamp() FROM br_rejection WHERE id=?",
+                        Boolean.class, r.id()))) {
+                    assertTrue(System.nanoTime() < deadline, "Lease did not expire");
+                    TimeUnit.MILLISECONDS.sleep(25);
+                }
                 assertFalse(repository.reapExpired("app", attempt -> DELAY));
             } finally {
                 release.countDown();
@@ -233,6 +241,8 @@ class JdbcRecoveryEngineIT {
         assertEquals(RecoveryResult.CORRECTION_REQUIRED, worker.runOnce());
         var pending = service.get(r.id());
         assertEquals(RejectionStatus.PENDING, pending.status());
+        assertThrows(CorrectionRequiredException.class,
+                () -> service.queue(r.id(), pending.version(), "operator", "retry unchanged"));
         var corrected = service.correct(r.id(), pending.version(),
                 new ReplayPayload("customer", 1, "fixed"), "operator", "correction");
         service.queue(r.id(), corrected.version(), "operator", "replay");

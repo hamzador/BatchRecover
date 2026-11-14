@@ -3,6 +3,7 @@ package io.github.hamzador.batchrecover.storage.jdbc;
 import io.github.hamzador.batchrecover.core.domain.*;
 import io.github.hamzador.batchrecover.core.exception.CaptureConflictException;
 import io.github.hamzador.batchrecover.core.exception.OptimisticLockException;
+import io.github.hamzador.batchrecover.core.exception.CorrectionRequiredException;
 import io.github.hamzador.batchrecover.core.port.RejectionRepository;
 import io.github.hamzador.batchrecover.core.port.RecoveryRepository;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -150,6 +151,15 @@ public final class JdbcRejectionRepository implements RejectionRepository, Recov
             }
         });
         return Objects.requireNonNull(transactions.execute(tx -> {
+            if (queue && Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM br_rejection r JOIN br_recovery_attempt a ON a.rejection_id = r.id
+                    WHERE r.id = ? AND r.version = ? AND r.current_revision = a.revision
+                    AND a.outcome = 'VALIDATION_FAILURE'
+                )
+                """, Boolean.class, updated.id(), expectedVersion))) {
+                throw new CorrectionRequiredException(updated.id());
+            }
             int count = jdbc.update("""
                 UPDATE br_rejection SET status = ?, current_revision = ?, next_attempt_at = ?,
                     version = ?, updated_at = ?

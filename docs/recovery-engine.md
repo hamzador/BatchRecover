@@ -26,7 +26,7 @@ The database clock governs due and expiration decisions; synchronize host clocks
 
 ## Retry
 
-Capped exponential delay (initial × 2^(attempt−1), limited by maximum) with equal jitter uniformly selected between half the capped delay (rounded up) and the cap in milliseconds. Failure codes are fixed sanitized enums, not raw exception messages. Missing handler or incompatible codec is a bounded retry; explicit RecoveryValidationException requires correction (or DEAD at the limit). A corrected item is revalidated before replay.
+Capped exponential delay (initial × 2^(attempt−1), limited by maximum) with equal jitter uniformly selected between half the capped delay (rounded up) and the cap in milliseconds. Failure codes are fixed sanitized enums, not raw exception messages. Missing handler or incompatible codec is a bounded retry; explicit RecoveryValidationException requires correction (or DEAD at the limit). After a validation failure, the JDBC repository refuses queueing the same revision, even if attempts remain. An explicit new revision is required, and the corrected item is revalidated before replay.
 
 ## Idempotence contract
 
