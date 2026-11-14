@@ -8,6 +8,11 @@ import java.util.UUID;
 /** Each write atomically persists the rejection, associated revision (if any) and audit. */
 public interface RejectionRepository {
     Rejection capture(Rejection rejection, PayloadRevision original, AuditEvent audit);
+    /** Capture must fail if no compatible transaction is active; never start a new one. */
+    default Rejection captureInExistingTransaction(Rejection rejection, PayloadRevision original, AuditEvent audit) {
+        throw new UnsupportedOperationException("Transactional capture is not supported by this repository");
+    }
+
     Optional<Rejection> findById(UUID id);
     List<PayloadRevision> findRevisions(UUID id);
     List<AuditEvent> findAuditEvents(UUID id);
