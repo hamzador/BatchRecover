@@ -27,22 +27,23 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
     protected abstract DataSource dataSource();
     protected abstract StandardSqlDialect expectedDialect();
 
+    @org.junit.jupiter.api.BeforeAll
+    void initializeSchema() {
+        source = dataSource();
+        manager = new JdbcTransactionManager(source);
+        jdbc = new JdbcTemplate(source);
+        var detected = new JdbcRejectionRepository(source, manager);
+        assertSame(expectedDialect(), detected.dialect());
+        for (String script : detected.dialect().migrationScripts()) {
+            new ResourceDatabasePopulator(new ByteArrayResource(script.getBytes(StandardCharsets.UTF_8))).execute(source);
+        }
+        jdbc.execute("CREATE TABLE dialect_effect (id VARCHAR(36) PRIMARY KEY, payload VARCHAR(100) NOT NULL)"
+                + (expectedDialect() == StandardSqlDialect.MYSQL ? " ENGINE=InnoDB" : ""));
+    }
+
     @Override protected RecoveryStorage createStorage() {
-        if (source == null) {
-            source = dataSource();
-            manager = new JdbcTransactionManager(source);
-            jdbc = new JdbcTemplate(source);
-            var detected = new JdbcRejectionRepository(source, manager);
-            assertSame(expectedDialect(), detected.dialect());
-            for (String script : detected.dialect().migrationScripts()) {
-                new ResourceDatabasePopulator(new ByteArrayResource(script.getBytes(StandardCharsets.UTF_8))).execute(source);
-            }
-            jdbc.execute("CREATE TABLE dialect_effect (id VARCHAR(36) PRIMARY KEY, payload VARCHAR(100) NOT NULL)"
-                    + (expectedDialect() == StandardSqlDialect.MYSQL ? " ENGINE=InnoDB" : ""));
-        } else {
-            for (String table : java.util.List.of("br_recovery_attempt", "br_audit_event", "br_payload_revision", "br_rejection", "dialect_effect")) {
-                jdbc.update("DELETE FROM " + table);
-            }
+        for (String table : java.util.List.of("br_recovery_attempt", "br_audit_event", "br_payload_revision", "br_rejection", "dialect_effect")) {
+            jdbc.update("DELETE FROM " + table);
         }
         return new JdbcRejectionRepository(source, manager);
     }
