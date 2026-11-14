@@ -1,6 +1,6 @@
 # Roadmap and quality gates
 
-Status: planned. No milestone has been implemented or tested yet.
+Status: M0 scaffold in progress; acceptance requires a successful build. M1–M4 remain planned.
 
 ## M0 — Project foundation
 - [ ] Confirm proposed Apache-2.0 license and Maven namespace (io.github.hamzador).
@@ -47,7 +47,7 @@ Acceptance: correcting and replaying 3 of the 10 rejected sample records produce
 
 ## Test strategy
 
-JUnit Jupiter for domain and services; Mockito only for unit collaborators; Testcontainers PostgreSQL for SQL, transactions and concurrency; Spring Batch integration tests for actual lifecycle semantics. Use English lower camelCase test names and arrange/act/assert. Prefer @ExtendWith(MockitoExtension.class), @Mock, @InjectMocks and @Captor when appropriate. Use @BeforeEach for necessary fixture data, not manual construction of an object already injected by Mockito.
+JUnit Jupiter 6 (Boot-managed) for domain and services; Mockito only for unit collaborators; Testcontainers PostgreSQL for SQL, transactions and concurrency; Spring Batch integration tests for actual lifecycle semantics. Use English lower camelCase test names and arrange/act/assert. Prefer @ExtendWith(MockitoExtension.class), @Mock, @InjectMocks and @Captor when appropriate. Use @BeforeEach for necessary fixture data, not manual construction of an object already injected by Mockito.
 
 Example planned unit test (illustrative, not compilable until domain types exist):
 
