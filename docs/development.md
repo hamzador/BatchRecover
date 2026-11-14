@@ -15,3 +15,7 @@ On Windows use `mvnw.cmd`. Docker is required for verify; test runs only unit te
 Sprint 1 adds initial domain types, dependency wiring, an opt-in configuration property (no functional recovery), smoke tests and CI. Phase is implicit in the identity because only processor skips are planned for the first release; add phase before multi-phase capture is introduced. The integration test only checks PostgreSQL connectivity, not rejection persistence or replay. Actual transaction guarantees must be proven in later milestones.
 
 References: [Boot 4.0 managed coordinates](https://docs.spring.io/spring-boot/4.0/appendix/dependency-versions/coordinates.html), [Maven Wrapper](https://maven.apache.org/tools/wrapper/).
+
+## Quality and local release preview
+
+`./mvnw -B -Prelease-preparation clean install` runs tests, attaches source/Javadoc archives and generates coverage reports. The internal `batchrecover-coverage` module aggregates library coverage, including execution data from the example. CI also creates a CycloneDX SBOM, audits known dependency advisories and stages a local unsigned preview. See [release checklist](release-checklist.md). The Maven Central publication step is deliberately absent.

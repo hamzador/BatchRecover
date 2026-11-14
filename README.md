@@ -2,9 +2,9 @@
 
 **Capture. Correct. Replay.**
 
-BatchRecover is a proposed Java library for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
+BatchRecover is a Java library under development for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: design / pre-alpha. Core, processor-skip capture and local JDBC recovery are under development; no published Maven artifact yet. API examples describe intended behavior, not supported functionality.
+> Status: pre-release development. Core, processor-skip capture and local JDBC recovery are implemented; the starter and release preparation are under review. No published Maven artifact yet.
 
 ## Why?
 
@@ -12,7 +12,7 @@ A batch may complete with skipped records. Restarting a failed job and recoverin
 
 ## First release (0.1.0)
 
-- Java 21, Maven multi-module, Spring Boot 4.0.x / Spring Batch 6.0.x (exact patches to be pinned and verified).
+- Java 21, Maven multi-module, Spring Boot 4.0.9 / Spring Batch 6.0.6 and PostgreSQL 16.
 - PostgreSQL / Spring JDBC; capture processor skips on explicitly opted-in chunk steps.
 - Durable rejection identity, immutable original payload, explicit correction and revision history.
 - Explicit, application-owned typed replay handlers; retry limits, lease-based claims and audit trail.
@@ -27,11 +27,16 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Core and PostgreSQL persistence](docs/core-persistence.md)
 - [Spring Batch adapter and example](docs/spring-batch-adapter.md)
 - [Recovery engine](docs/recovery-engine.md)
+- [Spring Boot starter and configuration](docs/starter.md)
+- [Release preparation and remaining gates](docs/release-checklist.md)
+- [Changelog](CHANGELOG.md)
 
-## Proposed usage
+## Local usage (SNAPSHOT)
+
+Install locally with `./mvnw -B clean install` (Docker required). Apply the database migrations explicitly, enable the starter and register typed handlers using the [starter guide](docs/starter.md).
 
 ```java
-// Illustrative only — API not yet implemented.
+// Application-owned types, reader, processor, writer and listener bean.
 @Bean
 Step customerImport(JobRepository jobRepository,
                     PlatformTransactionManager transactionManager,
@@ -54,7 +59,7 @@ The application supplies a stable source record identity, a safe versioned paylo
 
 ## Development
 
-Build tooling is planned as Maven, JUnit Jupiter 6, Mockito, Testcontainers PostgreSQL and GitHub Actions. Run `./mvnw test` for unit tests or `./mvnw -B clean verify` with Docker for the full reactor and integration smoke test. See [development setup](docs/development.md).
+Build tooling uses Maven, JUnit Jupiter 6, Mockito, Testcontainers PostgreSQL and GitHub Actions. Run `./mvnw test` for unit tests or `./mvnw -B clean verify` with Docker for the full reactor and integration smoke test. See [development setup](docs/development.md).
 
 The proposed Maven namespace is `io.github.hamzador` (ownership and publication still to be verified). Apache-2.0 is a proposed license; no license has been adopted yet.
 

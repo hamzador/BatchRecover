@@ -1,6 +1,6 @@
 # Roadmap and quality gates
 
-Status: M0–M2 verified and merged; M3 recovery implementation under review. CI is the acceptance gate. M4 remains planned.
+Status: M0–M3 verified and merged; M4 starter and release preparation under review. CI is the acceptance gate; owner decisions and publication remain pending.
 
 ## M0 — Project foundation
 - [ ] Confirm proposed Apache-2.0 license and Maven namespace (io.github.hamzador).
@@ -29,15 +29,16 @@ See [adapter implementation](spring-batch-adapter.md). CI passed (49 tests).
 Acceptance: sample 100 records, 10 processor skips, 90 successful records, 10 committed rejection rows. A transient failure that succeeds on retry does not produce a rejection; filtered items produce none. Rollback leaves no phantom rejection, restart does not duplicate committed rows. The actual pinned Batch version must pass these tests.
 
 ## M3 — Recovery
-See [recovery engine](recovery-engine.md). Mark acceptance complete after CI.
-- [ ] Typed handler registry, correction/revalidation and optimistic locking.
-- [ ] Explicit selected-item queueing; claim, bounded retry and lease reaper.
-- [ ] Atomic transactional business effect + success status for same-DB handler.
-- [ ] Failure classification and immutable attempt/audit history.
+See [recovery engine](recovery-engine.md). CI passed (73 tests).
+- [x] Typed handler registry, correction/revalidation and optimistic locking.
+- [x] Explicit selected-item queueing; claim, bounded retry and lease reaper.
+- [x] Atomic transactional business effect + success status for same-DB handler.
+- [x] Failure classification and immutable attempt/audit history.
 
 Acceptance: correcting and replaying 3 of the 10 rejected sample records produces 3 new valid effects, leaving 7 pending, and does not reprocess the 90 original successes. Two workers never apply the same local effect twice. Crash after claim, rollback after business write, expired lease and stale-token finalization are covered.
 
 ## M4 — Developer experience and release
+See [starter guide](starter.md) and [release checklist](release-checklist.md). No publication in this sprint.
 - [ ] Conditional starter beans; no automatic capture or schema migration by default.
 - [ ] Example, configuration reference, compatibility matrix and documented limitations.
 - [ ] CI, security review, release notes and artifact publication dry run.
