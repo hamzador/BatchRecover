@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
-/** Worker operations own separate transactions. Execution invokes the callback under a row lock. */
+/** Worker operations provide exclusive claims and fenced execution. Only transactional storage can roll back handler effects. */
 public interface RecoveryRepository {
     Optional<RecoveryClaim> claimNext(String applicationScope, Duration leaseDuration);
     boolean execute(RecoveryClaim claim, Consumer<RecoveryWork> callback);

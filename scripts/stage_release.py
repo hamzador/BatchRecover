@@ -7,7 +7,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 ROOT = Path(__file__).resolve().parents[1]
 NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 GROUP = "io/github/hamzador"
-MODULES = ("batchrecover-core", "batchrecover-storage-jdbc", "batchrecover-spring-batch",
+MODULES = ("batchrecover-core", "batchrecover-storage-memory", "batchrecover-storage-jdbc", "batchrecover-spring-batch",
            "batchrecover-spring-boot-starter")
 
 

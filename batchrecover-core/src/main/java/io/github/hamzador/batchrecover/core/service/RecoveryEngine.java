@@ -33,7 +33,7 @@ public final class RecoveryEngine {
     }
 
     private RecoveryResult execute(RecoveryClaim claim) {
-        // Only a rolled-back handler exception is classified. Infrastructure/commit failures
+        // Only a handler exception is classified. Transactional repositories roll back effects; others cannot. Infrastructure/commit failures
         // propagate; an ambiguous commit must not be incorrectly recorded as a handler failure.
         try {
             return repository.execute(claim, registry::execute)

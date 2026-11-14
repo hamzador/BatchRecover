@@ -6,7 +6,8 @@ import io.github.hamzador.batchrecover.core.service.RejectionService;
 import io.github.hamzador.batchrecover.core.service.RecoveryEngine;
 import io.github.hamzador.batchrecover.core.service.RecoveryHandlerRegistry;
 import io.github.hamzador.batchrecover.springbatch.BatchCaptureContextResolver;
-import io.github.hamzador.batchrecover.storage.jdbc.JdbcRejectionRepository;
+import io.github.hamzador.batchrecover.storage.memory.InMemoryRecoveryStorage;
+import io.github.hamzador.batchrecover.core.port.RecoveryStorage;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -15,7 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.context.annotation.Import;
 
 import java.time.Clock;
 import java.util.List;
@@ -30,18 +31,9 @@ public class BatchRecoverAutoConfiguration {
 
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnProperty(prefix = "batchrecover", name = "enabled", havingValue = "true")
+    @Import({JdbcStorageConfiguration.class, MemoryStorageConfiguration.class})
     static class EnabledConfiguration {
 
-        @Bean
-        @ConditionalOnMissingBean({RejectionRepository.class, RecoveryRepository.class})
-        JdbcRejectionRepository batchRecoverRepository(ObjectProvider<JdbcTransactionManager> managers) {
-            JdbcTransactionManager manager = managers.getIfUnique();
-            if (manager == null || manager.getDataSource() == null) {
-                throw new IllegalStateException("BatchRecover requires one unambiguous JdbcTransactionManager with a DataSource; "
-                        + "configure the same manager as the chunk or provide both repository ports");
-            }
-            return new JdbcRejectionRepository(manager.getDataSource(), manager);
-        }
 
         @Bean
         @ConditionalOnMissingBean
@@ -73,7 +65,15 @@ public class BatchRecoverAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         BatchRecoverListenerFactory batchRecoverListenerFactory(RejectionService service,
-                BatchCaptureContextResolver resolver, BatchRecoverProperties properties) {
+                BatchCaptureContextResolver resolver, BatchRecoverProperties properties,
+                RejectionRepository rejectionRepository, RecoveryRepository recoveryRepository) {
+            boolean memory = properties.storage().type() == BatchRecoverProperties.StorageType.MEMORY;
+            if (memory && (!(rejectionRepository instanceof RecoveryStorage storage)
+                    || rejectionRepository != recoveryRepository
+                    || storage.capabilities().transactionalCapture()
+                    || storage.capabilities().durable())) {
+                throw new IllegalStateException("Memory mode requires one non-durable, non-transactional RecoveryStorage");
+            }
             return new BatchRecoverListenerFactory(service, resolver, properties);
         }
 
@@ -83,6 +83,17 @@ public class BatchRecoverAutoConfiguration {
                                               ObjectProvider<MeterRegistry> meterRegistries) {
             return new BatchRecoverWorker(engine,
                     () -> properties.metricsEnabled() ? meterRegistries.getIfUnique() : null);
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnProperty(prefix = "batchrecover", name = "enabled", havingValue = "true")
+    static class MemoryStorageConfiguration {
+        @Bean
+        @ConditionalOnProperty(prefix = "batchrecover.storage", name = "type", havingValue = "memory")
+        @ConditionalOnMissingBean({RejectionRepository.class, RecoveryRepository.class})
+        InMemoryRecoveryStorage batchRecoverMemoryStorage(BatchRecoverProperties properties) {
+            return new InMemoryRecoveryStorage(Clock.systemUTC(), properties.storage().memoryLimits());
         }
     }
 }

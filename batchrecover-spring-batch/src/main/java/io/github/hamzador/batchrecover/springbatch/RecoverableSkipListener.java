@@ -9,7 +9,7 @@ import org.springframework.batch.core.listener.SkipListener;
 
 import java.util.Objects;
 
-/** Explicit opt-in listener for sequential, JDBC-transactional processor skips only. */
+/** Explicit opt-in listener for sequential processor skips; transactional capture is the default. */
 public final class RecoverableSkipListener<I, O> implements SkipListener<I, O> {
     private final RejectionService service;
     private final BatchCaptureContextResolver contextResolver;
@@ -38,7 +38,11 @@ public final class RecoverableSkipListener<I, O> implements SkipListener<I, O> {
                 identity.sourceOccurrenceId(item)), context.jobExecutionId(), context.stepExecutionId(),
                 settings.handlerId(), error.code(), error.category(), payload, settings.maxAttempts());
         // MANDATORY at the JDBC repository: fail closed rather than record a detached skip.
-        service.captureInExistingTransaction(request);
+        if (settings.transactional()) {
+            service.captureInExistingTransaction(request);
+        } else {
+            service.capture(request);
+        }
     }
 
     // Read and write skips are intentionally not captured in this release.

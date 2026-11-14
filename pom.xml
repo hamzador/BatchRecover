@@ -31,6 +31,7 @@
     <!-- License metadata intentionally pending owner approval. Not publishable yet. -->
     <modules>
         <module>batchrecover-core</module>
+        <module>batchrecover-storage-memory</module>
         <module>batchrecover-storage-jdbc</module>
         <module>batchrecover-spring-batch</module>
         <module>batchrecover-spring-boot-starter</module>

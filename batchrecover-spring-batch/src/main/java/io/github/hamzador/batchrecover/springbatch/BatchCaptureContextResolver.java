@@ -12,7 +12,7 @@ public class BatchCaptureContextResolver {
         var step = context.getStepExecution();
         var job = step.getJobExecution();
         if (step.getId() < 0 || job.getId() < 0 || job.getJobInstanceId() < 0) {
-            throw new IllegalStateException("Persisted Spring Batch execution IDs are required");
+            throw new IllegalStateException("Nonnegative Spring Batch execution IDs are required");
         }
         return new BatchCaptureContext(job.getJobInstanceId(), job.getId(), step.getId(), step.getStepName());
     }

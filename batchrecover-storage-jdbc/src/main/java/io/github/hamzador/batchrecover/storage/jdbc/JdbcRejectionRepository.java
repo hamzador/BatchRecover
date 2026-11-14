@@ -4,8 +4,8 @@ import io.github.hamzador.batchrecover.core.domain.*;
 import io.github.hamzador.batchrecover.core.exception.CaptureConflictException;
 import io.github.hamzador.batchrecover.core.exception.OptimisticLockException;
 import io.github.hamzador.batchrecover.core.exception.CorrectionRequiredException;
-import io.github.hamzador.batchrecover.core.port.RejectionRepository;
-import io.github.hamzador.batchrecover.core.port.RecoveryRepository;
+import io.github.hamzador.batchrecover.core.port.RecoveryStorage;
+import io.github.hamzador.batchrecover.core.port.StorageCapabilities;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -31,7 +31,7 @@ import java.util.UUID;
  * PostgreSQL adapter. REQUIRED joins an existing JDBC transaction on the same DataSource.
  * Duplicate capture uses READ COMMITTED semantics; callers must retry serialization failures.
  */
-public final class JdbcRejectionRepository implements RejectionRepository, RecoveryRepository {
+public final class JdbcRejectionRepository implements RecoveryStorage {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     private final TransactionTemplate mandatoryTransactions;
@@ -50,6 +50,11 @@ public final class JdbcRejectionRepository implements RejectionRepository, Recov
         this.workerTransactions = new TransactionTemplate(transactionManager);
         this.workerTransactions.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         this.workerTransactions.setTimeout(30);
+    }
+
+    @Override
+    public StorageCapabilities capabilities() {
+        return StorageCapabilities.JDBC;
     }
 
     @Override
