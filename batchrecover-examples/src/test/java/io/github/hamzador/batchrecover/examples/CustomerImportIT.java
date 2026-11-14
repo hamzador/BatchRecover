@@ -135,12 +135,19 @@ class CustomerImportIT {
         assertEquals(BatchStatus.COMPLETED, execution.getStatus());
         var originalCustomers = jdbc.queryForList("SELECT source_row,email FROM demo_customer ORDER BY source_row");
         jdbc.execute("""
-                CREATE FUNCTION reject_original_mutation() RETURNS trigger LANGUAGE plpgsql AS $
-                BEGIN RAISE EXCEPTION 'original successful record mutated'; END;
-                $
+                CREATE FUNCTION reject_original_mutation() RETURNS trigger LANGUAGE plpgsql AS
+                'BEGIN
+                  IF TG_OP <> ''INSERT'' THEN
+                    RAISE EXCEPTION ''original successful record mutated'';
+                  END IF;
+                  IF NEW.source_row % 10 <> 0 THEN
+                    RAISE EXCEPTION ''original successful record reprocessed'';
+                  END IF;
+                  RETURN NEW;
+                END;'
                 """);
         jdbc.execute("""
-                CREATE TRIGGER guard_original_records BEFORE UPDATE OR DELETE ON demo_customer
+                CREATE TRIGGER guard_original_records BEFORE INSERT OR UPDATE OR DELETE ON demo_customer
                 FOR EACH ROW EXECUTE FUNCTION reject_original_mutation()
                 """);
         assertEquals(3, demo.recoverThreeCustomers());
