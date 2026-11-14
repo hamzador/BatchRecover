@@ -16,15 +16,31 @@
     <name>BatchRecover</name>
     <description>Item-level recovery for Spring Batch</description>
     <url>https://github.com/hamzador/BatchRecover</url>
+    <scm>
+        <connection>scm:git:https://github.com/hamzador/BatchRecover.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/hamzador/BatchRecover.git</developerConnection>
+        <url>https://github.com/hamzador/BatchRecover</url>
+        <tag>HEAD</tag>
+    </scm>
+    <developers>
+        <developer>
+            <id>hamzador</id>
+            <url>https://github.com/hamzador</url>
+        </developer>
+    </developers>
+    <!-- License metadata intentionally pending owner approval. Not publishable yet. -->
     <modules>
         <module>batchrecover-core</module>
         <module>batchrecover-storage-jdbc</module>
         <module>batchrecover-spring-batch</module>
         <module>batchrecover-spring-boot-starter</module>
         <module>batchrecover-examples</module>
+        <module>batchrecover-coverage</module>
     </modules>
     <properties>
         <java.version>21</java.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <argLine></argLine>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -42,6 +58,15 @@
         </dependency>
     </dependencies>
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration><argLine>@{argLine}</argLine></configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -66,7 +91,59 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>coverage-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                        <configuration><append>true</append></configuration>
+                    </execution>
+                    <execution>
+                        <id>module-coverage</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>release-preparation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-source</id>
+                                <phase>package</phase>
+                                <goals><goal>jar-no-fork</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration><doclint>all,-missing</doclint></configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadoc</id>
+                                <phase>package</phase>
+                                <goals><goal>jar</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

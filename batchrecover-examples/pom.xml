@@ -11,7 +11,8 @@
     </parent>
     <artifactId>batchrecover-examples</artifactId>
     <name>batchrecover-examples</name>
-    <description>Integration examples (scaffold)</description>
+    <description>Runnable import and replay examples (not published)</description>
+    <properties><maven.deploy.skip>true</maven.deploy.skip></properties>
     <dependencies>
         <dependency>
             <groupId>io.github.hamzador</groupId>
