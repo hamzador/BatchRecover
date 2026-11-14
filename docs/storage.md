@@ -41,3 +41,5 @@ Custom providers can implement RecoveryStorage or supply both existing ports as 
 The shared JUnit contract lives under core test sources, packaged as a test-scoped test JAR. Both memory and real PostgreSQL run it. Backend-specific tests verify JDBC rollback and memory bounds. No testing dependency is in the production library.
 
 The library exposes no REST, web server or UI. File/NoSQL providers are deferred until demand warrants maintenance.
+
+The CI resolves an independent consumer POM against the locally installed starter and rejects transitive BatchRecover JDBC adapter, vendor drivers, web/ORM and test-tool dependencies. It also prints actual library JAR sizes. Framework dependencies already required by Spring Batch may still be present; no claim of zero framework dependencies for the starter.
