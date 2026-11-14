@@ -47,7 +47,8 @@ class BatchRecoverStarterIT {
                 jdbc.update("INSERT INTO starter_effect VALUES (?,?)", context.idempotencyKey(), item);
             }
         };
-        try (var meters = new SimpleMeterRegistry()) {
+        var meters = new SimpleMeterRegistry();
+        try {
             new ApplicationContextRunner()
                     .withConfiguration(AutoConfigurations.of(BatchRecoverAutoConfiguration.class))
                     .withPropertyValues("batchrecover.enabled=true", "batchrecover.application-scope=starter-it")
@@ -81,6 +82,8 @@ class BatchRecoverStarterIT {
                         assertThat(service.get(captured.id()).status()).isEqualTo(RejectionStatus.RECOVERED);
                         assertThat(meters.get("batchrecover.worker.poll").tag("outcome", "RECOVERED").timer().count()).isEqualTo(1);
                     });
+        } finally {
+            meters.close();
         }
     }
 }

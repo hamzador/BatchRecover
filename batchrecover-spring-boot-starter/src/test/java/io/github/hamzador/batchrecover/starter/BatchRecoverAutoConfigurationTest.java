@@ -94,7 +94,8 @@ class BatchRecoverAutoConfigurationTest {
     void shouldNotRecordMetricsWhenExplicitlyDisabled() {
         RecoveryEngine engine = mock(RecoveryEngine.class);
         when(engine.runOnce()).thenReturn(io.github.hamzador.batchrecover.core.domain.RecoveryResult.NO_WORK);
-        try (var registry = new SimpleMeterRegistry()) {
+        var registry = new SimpleMeterRegistry();
+        try {
             enabled().withPropertyValues("batchrecover.metrics-enabled=false")
                     .withBean(RejectionRepository.class, () -> mock(RejectionRepository.class))
                     .withBean(RecoveryRepository.class, () -> mock(RecoveryRepository.class))
@@ -104,6 +105,8 @@ class BatchRecoverAutoConfigurationTest {
                         context.getBean(BatchRecoverWorker.class).runOnce();
                         assertThat(registry.getMeters()).isEmpty();
                     });
+        } finally {
+            registry.close();
         }
     }
 

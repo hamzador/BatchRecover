@@ -10,7 +10,7 @@ import java.time.Duration;
 @ConfigurationProperties("batchrecover")
 public record BatchRecoverProperties(
         @DefaultValue("false") boolean enabled,
-        @DefaultValue("") String applicationScope,
+        String applicationScope,
         @DefaultValue("3") int maxAttempts,
         @DefaultValue("30s") Duration leaseDuration,
         @DefaultValue("1s") Duration initialRetryDelay,
