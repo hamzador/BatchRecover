@@ -53,6 +53,22 @@ class RecoverableSkipListenerTest {
     }
 
     @Test
+    void shouldCaptureWithoutTransactionOnlyWhenExplicitlyConfigured() {
+        var failure = new IllegalArgumentException();
+        when(settings.transactional()).thenReturn(false);
+        when(contextResolver.current()).thenReturn(new BatchCaptureContext(11, 22, 33, "import"));
+        when(identity.sourceOccurrenceId("input")).thenReturn("file:42");
+        when(codec.typeId()).thenReturn("customer");
+        when(codec.schemaVersion()).thenReturn(1);
+        when(codec.encode("input")).thenReturn("{}");
+        when(classifier.classify(failure)).thenReturn(new ClassifiedError("INVALID", ErrorCategory.BUSINESS));
+        listener.onSkipInProcess("input", failure);
+        verify(service).capture(requestCaptor.capture());
+        assertEquals("file:42", requestCaptor.getValue().identity().sourceOccurrenceId());
+        verify(service, never()).captureInExistingTransaction(any());
+    }
+
+    @Test
     void shouldIgnoreReadAndWriteSkips() {
         listener.onSkipInRead(new IllegalArgumentException());
         listener.onSkipInWrite("output", new IllegalArgumentException());

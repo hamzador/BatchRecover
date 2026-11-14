@@ -62,6 +62,16 @@ public final class InMemoryRecoveryStorage implements RecoveryStorage {
     }
 
     @Override
+    public synchronized List<Rejection> findPending(String scope, int limit) {
+        validateScope(scope);
+        if (limit < 1 || limit > 1000) throw new IllegalArgumentException("Invalid query limit");
+        return records.values().stream().map(e -> e.rejection)
+                .filter(r -> r.status() == RejectionStatus.PENDING && r.identity().applicationScope().equals(scope))
+                .sorted(Comparator.comparing(Rejection::createdAt).thenComparing(Rejection::id))
+                .limit(limit).toList();
+    }
+
+    @Override
     public synchronized Optional<Rejection> findById(UUID id) {
         return Optional.ofNullable(records.get(id)).map(e -> e.rejection);
     }

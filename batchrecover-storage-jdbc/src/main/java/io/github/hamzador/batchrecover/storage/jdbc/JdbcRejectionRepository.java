@@ -110,6 +110,16 @@ public final class JdbcRejectionRepository implements RecoveryStorage {
     }
 
     @Override
+    public List<Rejection> findPending(String scope, int limit) {
+        validateScope(scope);
+        if (limit < 1 || limit > 1000) throw new IllegalArgumentException("Invalid query limit");
+        return List.copyOf(jdbc.query("""
+                SELECT * FROM br_rejection WHERE application_scope = ? AND status = 'PENDING'
+                ORDER BY created_at, id LIMIT ?
+                """, REJECTION, scope, limit));
+    }
+
+    @Override
     public Optional<Rejection> findById(UUID id) {
         return jdbc.query("SELECT * FROM br_rejection WHERE id = ?", REJECTION, id)
                 .stream().findFirst();

@@ -39,3 +39,7 @@ Apply V1 then V2 (scoped worker indexes) using your migration history; existing 
 ## Quality gates
 
 Testcontainers tests cover rollback after handler write and failed success audit, competing workers, isolated application scopes, expired and stale tokens, attempt exhaustion, correction/revalidation, and distinct stable local effects. CI must pass before merge. No production certification.
+
+## Storage capabilities
+
+The transaction and rollback guarantees above apply to JDBC only. The optional single-JVM memory adapter provides fenced metadata transitions but cannot roll back handler effects. Memory handlers must be idempotent and bounded; see [storage architecture](storage.md).

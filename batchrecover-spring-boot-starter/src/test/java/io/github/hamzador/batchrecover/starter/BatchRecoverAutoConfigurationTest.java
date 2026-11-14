@@ -110,6 +110,62 @@ class BatchRecoverAutoConfigurationTest {
         }
     }
 
+    @Test
+    void shouldStartMemoryWithoutJdbcClassesOrDataSource() {
+        enabled().withClassLoader(new org.springframework.boot.test.context.FilteredClassLoader(
+                        "io.github.hamzador.batchrecover.storage.jdbc", "org.springframework.jdbc"))
+                .withPropertyValues("batchrecover.storage.type=memory", "batchrecover.storage.max-records=2")
+                .run(context -> {
+                    assertThat(context).hasNotFailed().hasSingleBean(RecoveryStorage.class)
+                            .hasSingleBean(RecoveryEngine.class).doesNotHaveBean(DataSource.class);
+                    assertThat(context.getBean(RecoveryStorage.class).capabilities())
+                            .isEqualTo(StorageCapabilities.MEMORY);
+                    assertThat(context.getBean(BatchRecoverProperties.class).storage().maxRecords()).isEqualTo(2);
+                });
+    }
+
+    @Test
+    void shouldFailInsteadOfFallingBackToMemoryWhenJdbcAdapterMissing() {
+        enabled().withClassLoader(new org.springframework.boot.test.context.FilteredClassLoader(
+                        "io.github.hamzador.batchrecover.storage.jdbc"))
+                .withPropertyValues("batchrecover.storage.type=jdbc")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void shouldNotChooseJdbcWhenMemoryExplicitlySelected() {
+        var source = mock(DataSource.class);
+        enabled().withPropertyValues("batchrecover.storage.type=memory")
+                .withBean(JdbcTransactionManager.class, () -> new JdbcTransactionManager(source))
+                .run(context -> {
+                    assertThat(context).hasNotFailed().doesNotHaveBean(JdbcRejectionRepository.class);
+                    assertThat(context.getBean(RecoveryStorage.class).capabilities())
+                            .isEqualTo(StorageCapabilities.MEMORY);
+                });
+        verifyNoInteractions(source);
+    }
+
+    @Test
+    void shouldFailWhenCustomStorageMissing() {
+        enabled().withPropertyValues("batchrecover.storage.type=custom")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void shouldFailWhenMemoryLimitInvalid() {
+        enabled().withPropertyValues("batchrecover.storage.type=memory", "batchrecover.storage.max-payload-bytes=0")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void shouldRespectExplicitCustomStoragePorts() {
+        enabled().withPropertyValues("batchrecover.storage.type=custom")
+                .withBean(RejectionRepository.class, () -> mock(RejectionRepository.class))
+                .withBean(RecoveryRepository.class, () -> mock(RecoveryRepository.class))
+                .run(context -> assertThat(context).hasNotFailed().hasSingleBean(RecoveryEngine.class)
+                        .doesNotHaveBean(JdbcRejectionRepository.class));
+    }
+
     private ApplicationContextRunner enabled() {
         return contextRunner.withPropertyValues("batchrecover.enabled=true", "batchrecover.application-scope=app");
     }
