@@ -24,6 +24,7 @@ Read and write skips, distributed steps, cross-database transactions, external s
 
 - [Architecture and technical specification](docs/architecture.md)
 - [Roadmap, acceptance criteria and test strategy](docs/roadmap.md)
+- [Core and PostgreSQL persistence](docs/core-persistence.md)
 
 ## Proposed usage
 

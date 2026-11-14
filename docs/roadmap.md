@@ -1,17 +1,18 @@
 # Roadmap and quality gates
 
-Status: M0 scaffold in progress; acceptance requires a successful build. M1–M4 remain planned.
+Status: M0 build verified and merged; M1 implementation under review, CI is the acceptance gate. M2–M4 remain planned.
 
 ## M0 — Project foundation
 - [ ] Confirm proposed Apache-2.0 license and Maven namespace (io.github.hamzador).
-- [ ] Create Maven reactor, Java 21 toolchain, Maven Wrapper, pinned Boot 4.0.x BOM and compatible Batch 6.0.x.
-- [ ] Create core, JDBC storage, Spring Batch adapter, Boot starter and example modules.
-- [ ] Configure GitHub Actions to run ./mvnw -B verify with PostgreSQL Testcontainers.
-- [ ] Add contribution guide, security reporting policy, dependency updates and reproducible build settings.
+- [x] Create Maven reactor, Java 21 toolchain, Maven Wrapper, pinned Boot 4.0.x BOM and compatible Batch 6.0.x.
+- [x] Create core, JDBC storage, Spring Batch adapter, Boot starter and example modules.
+- [x] Configure GitHub Actions to run ./mvnw -B verify with PostgreSQL Testcontainers.
+- [x] Add contribution guide, security reporting policy, dependency updates and reproducible build settings.
 
 Acceptance: fresh clone builds and tests; dependency tree uses the intended Spring versions. No publishing credentials in repository.
 
 ## M1 — Domain and storage
+See [implementation notes](core-persistence.md). Mark acceptance complete only after CI passes.
 - [ ] Define rejection identity, payload revisions, status transitions, retry policy and repository ports.
 - [ ] Versioned PostgreSQL DDL, unique key, revision history, auditing, optimistic updates.
 - [ ] Integration-test atomic insertion and duplicate capture under concurrent access.
