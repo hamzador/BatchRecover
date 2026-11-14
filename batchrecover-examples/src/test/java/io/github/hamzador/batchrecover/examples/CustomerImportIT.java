@@ -128,6 +128,40 @@ class CustomerImportIT {
         assertEquals(2, count("br_audit_event"));
     }
 
+    @Test
+    void shouldRecoverThreeRejectedCustomersWithoutReprocessingSuccessfulCustomers() throws Exception {
+        var execution = demo.run(demo.job(CustomerImportExample.sampleRows(), CustomerImportExample::validate,
+                demo.writer(), null, true, 10), "recovery");
+        assertEquals(BatchStatus.COMPLETED, execution.getStatus());
+        var originalCustomers = jdbc.queryForList("SELECT source_row,email FROM demo_customer ORDER BY source_row");
+        jdbc.execute("""
+                CREATE FUNCTION reject_original_mutation() RETURNS trigger LANGUAGE plpgsql AS
+                'BEGIN
+                  IF TG_OP <> ''INSERT'' THEN
+                    RAISE EXCEPTION ''original successful record mutated'';
+                  END IF;
+                  IF NEW.source_row % 10 <> 0 THEN
+                    RAISE EXCEPTION ''original successful record reprocessed'';
+                  END IF;
+                  RETURN NEW;
+                END;'
+                """);
+        jdbc.execute("""
+                CREATE TRIGGER guard_original_records BEFORE INSERT OR UPDATE OR DELETE ON demo_customer
+                FOR EACH ROW EXECUTE FUNCTION reject_original_mutation()
+                """);
+        assertEquals(3, demo.recoverThreeCustomers());
+        assertEquals(93, count("demo_customer"));
+        assertEquals(originalCustomers, jdbc.queryForList(
+                "SELECT source_row,email FROM demo_customer WHERE source_row % 10 <> 0 ORDER BY source_row"));
+        assertEquals(7, jdbc.queryForObject("SELECT count(*) FROM br_rejection WHERE status='PENDING'", Integer.class));
+        assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM br_rejection WHERE status='RECOVERED'", Integer.class));
+        assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM br_recovery_attempt WHERE outcome='RECOVERED'", Integer.class));
+        assertEquals(13, count("br_payload_revision"));
+        assertEquals(22, count("br_audit_event"));
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM batch_job_execution", Integer.class));
+    }
+
     private int count(String table) {
         return jdbc.queryForObject("SELECT count(*) FROM " + table, Integer.class);
     }

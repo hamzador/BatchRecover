@@ -52,7 +52,7 @@ public class RejectionService {
         if (!current.payloadType().equals(payload.typeId())) {
             throw new IllegalArgumentException("Payload type cannot change");
         }
-        Rejection updated = current.correct(now());
+        Rejection updated = current.correct(mutationTime(current));
         PayloadRevision revision = new PayloadRevision(id, updated.currentRevision(),
                 payload, actor, reason, updated.updatedAt());
         return repository.save(updated, expectedVersion, Optional.of(revision),
@@ -61,14 +61,14 @@ public class RejectionService {
 
     public Rejection queue(UUID id, long expectedVersion, String actor, String reason) {
         Rejection current = loadVersion(id, expectedVersion);
-        Rejection updated = current.queue(now());
+        Rejection updated = current.queue(mutationTime(current));
         return repository.save(updated, expectedVersion, Optional.empty(),
                 audit(updated, current.status(), AuditAction.QUEUED, actor, reason));
     }
 
     public Rejection discard(UUID id, long expectedVersion, String actor, String reason) {
         Rejection current = loadVersion(id, expectedVersion);
-        Rejection updated = current.discard(now());
+        Rejection updated = current.discard(mutationTime(current));
         return repository.save(updated, expectedVersion, Optional.empty(),
                 audit(updated, current.status(), AuditAction.DISCARDED, actor, reason));
     }
@@ -79,6 +79,11 @@ public class RejectionService {
             throw new OptimisticLockException(id);
         }
         return rejection;
+    }
+
+    private Instant mutationTime(Rejection current) {
+        Instant time = now();
+        return time.isBefore(current.updatedAt()) ? current.updatedAt() : time;
     }
 
     private Instant now() {

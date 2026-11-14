@@ -64,6 +64,35 @@ public record Rejection(UUID id, RejectionIdentity identity, long jobExecutionId
         return change(RejectionStatus.DISCARDED, currentRevision, null, now);
     }
 
+    public Rejection claim(UUID token, Instant expiresAt, Instant now) {
+        status.requireTransitionTo(RejectionStatus.RUNNING);
+        if (nextAttemptAt.isAfter(now) || !expiresAt.isAfter(now) || attemptCount >= maxAttempts) {
+            throw new IllegalStateException("Rejection is not eligible for claim");
+        }
+        return new Rejection(id, identity, jobExecutionId, stepExecutionId, handlerId,
+                errorCode, category, payloadType, RejectionStatus.RUNNING, currentRevision,
+                Math.incrementExact(attemptCount), maxAttempts, null, token, expiresAt,
+                Math.incrementExact(version), createdAt, now);
+    }
+
+    public Rejection recovered(Instant now) {
+        status.requireTransitionTo(RejectionStatus.RECOVERED);
+        return change(RejectionStatus.RECOVERED, currentRevision, null, now);
+    }
+
+    public Rejection failed(RecoveryFailure failure, java.time.Duration delay, Instant now) {
+        Objects.requireNonNull(failure);
+        if (delay.isNegative() || delay.isZero()) throw new IllegalArgumentException("Invalid retry delay");
+        RejectionStatus target = attemptCount >= maxAttempts ? RejectionStatus.DEAD
+                : failure == RecoveryFailure.VALIDATION_FAILED ? RejectionStatus.PENDING
+                : RejectionStatus.QUEUED;
+        if (status != RejectionStatus.RUNNING) {
+            throw new io.github.hamzador.batchrecover.core.exception.InvalidStatusTransitionException(status, target);
+        }
+        status.requireTransitionTo(target);
+        return change(target, currentRevision, target == RejectionStatus.QUEUED ? now.plus(delay) : null, now);
+    }
+
     private void requirePending(RejectionStatus target) {
         if (status != RejectionStatus.PENDING) {
             throw new io.github.hamzador.batchrecover.core.exception.InvalidStatusTransitionException(status, target);

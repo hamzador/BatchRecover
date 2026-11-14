@@ -1,6 +1,6 @@
 # Roadmap and quality gates
 
-Status: M0 and M1 builds verified and merged; M2 adapter implementation under review. CI is the acceptance gate. M3–M4 remain planned.
+Status: M0–M2 verified and merged; M3 recovery implementation under review. CI is the acceptance gate. M4 remains planned.
 
 ## M0 — Project foundation
 - [ ] Confirm proposed Apache-2.0 license and Maven namespace (io.github.hamzador).
@@ -20,15 +20,16 @@ See [implementation notes](core-persistence.md). Mark acceptance complete only a
 Acceptance: duplicate capture returns original record without mutation; state violations fail; migration works on empty database.
 
 ## M2 — Spring Batch capture
-See [adapter implementation](spring-batch-adapter.md). Mark acceptance complete after CI.
-- [ ] Explicit registration for processor skips on opted-in steps.
-- [ ] Resolve provenance, enforce stable identity and approved payload codec.
-- [ ] Use the original chunk transaction. Fail closed on repository error.
-- [ ] Sample job with valid and invalid customers.
+See [adapter implementation](spring-batch-adapter.md). CI passed (49 tests).
+- [x] Explicit registration for processor skips on opted-in steps.
+- [x] Resolve provenance, enforce stable identity and approved payload codec.
+- [x] Use the original chunk transaction. Fail closed on repository error.
+- [x] Sample job with valid and invalid customers.
 
 Acceptance: sample 100 records, 10 processor skips, 90 successful records, 10 committed rejection rows. A transient failure that succeeds on retry does not produce a rejection; filtered items produce none. Rollback leaves no phantom rejection, restart does not duplicate committed rows. The actual pinned Batch version must pass these tests.
 
 ## M3 — Recovery
+See [recovery engine](recovery-engine.md). Mark acceptance complete after CI.
 - [ ] Typed handler registry, correction/revalidation and optimistic locking.
 - [ ] Explicit selected-item queueing; claim, bounded retry and lease reaper.
 - [ ] Atomic transactional business effect + success status for same-DB handler.

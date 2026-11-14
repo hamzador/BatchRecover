@@ -3,7 +3,13 @@ package io.github.hamzador.batchrecover.storage.jdbc;
 import io.github.hamzador.batchrecover.core.domain.*;
 import io.github.hamzador.batchrecover.core.exception.CaptureConflictException;
 import io.github.hamzador.batchrecover.core.exception.OptimisticLockException;
+import io.github.hamzador.batchrecover.core.exception.CorrectionRequiredException;
 import io.github.hamzador.batchrecover.core.port.RejectionRepository;
+import io.github.hamzador.batchrecover.core.port.RecoveryRepository;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import java.time.Duration;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.JdbcTransactionManager;
@@ -25,10 +31,11 @@ import java.util.UUID;
  * PostgreSQL adapter. REQUIRED joins an existing JDBC transaction on the same DataSource.
  * Duplicate capture uses READ COMMITTED semantics; callers must retry serialization failures.
  */
-public final class JdbcRejectionRepository implements RejectionRepository {
+public final class JdbcRejectionRepository implements RejectionRepository, RecoveryRepository {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     private final TransactionTemplate mandatoryTransactions;
+    private final TransactionTemplate workerTransactions;
 
     public JdbcRejectionRepository(DataSource dataSource, JdbcTransactionManager transactionManager) {
         Objects.requireNonNull(dataSource, "dataSource");
@@ -40,6 +47,9 @@ public final class JdbcRejectionRepository implements RejectionRepository {
         this.transactions = new TransactionTemplate(transactionManager);
         this.mandatoryTransactions = new TransactionTemplate(transactionManager);
         this.mandatoryTransactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_MANDATORY);
+        this.workerTransactions = new TransactionTemplate(transactionManager);
+        this.workerTransactions.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        this.workerTransactions.setTimeout(30);
     }
 
     @Override
@@ -141,6 +151,15 @@ public final class JdbcRejectionRepository implements RejectionRepository {
             }
         });
         return Objects.requireNonNull(transactions.execute(tx -> {
+            if (queue && Boolean.TRUE.equals(jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM br_rejection r JOIN br_recovery_attempt a ON a.rejection_id = r.id
+                    WHERE r.id = ? AND r.version = ? AND r.current_revision = a.revision
+                    AND a.outcome = 'VALIDATION_FAILURE'
+                )
+                """, Boolean.class, updated.id(), expectedVersion))) {
+                throw new CorrectionRequiredException(updated.id());
+            }
             int count = jdbc.update("""
                 UPDATE br_rejection SET status = ?, current_revision = ?, next_attempt_at = ?,
                     version = ?, updated_at = ?
@@ -158,6 +177,179 @@ public final class JdbcRejectionRepository implements RejectionRepository {
             return findById(updated.id()).orElseThrow();
         }));
     }
+
+    @Override
+    public Optional<RecoveryClaim> claimNext(String scope, Duration leaseDuration) {
+        requireWorkerBoundary();
+        validateScope(scope);
+        if (leaseDuration.compareTo(Duration.ofMillis(1)) < 0
+                || leaseDuration.compareTo(Duration.ofDays(1)) > 0) {
+            throw new IllegalArgumentException("Invalid lease duration");
+        }
+        return Objects.requireNonNull(workerTransactions.execute(tx -> {
+            var eligible = jdbc.query("""
+                SELECT * FROM br_rejection WHERE application_scope = ? AND status = 'QUEUED'
+                AND next_attempt_at <= clock_timestamp() AND attempt_count < max_attempts
+                ORDER BY next_attempt_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
+                """, REJECTION, scope);
+            if (eligible.isEmpty()) return Optional.empty();
+            Rejection current = eligible.getFirst();
+            Instant now = transitionTime(current);
+            Rejection claimed = current.claim(UUID.randomUUID(), now.plusMillis(leaseDuration.toMillis()), now);
+            updateWorkerState(current, claimed);
+            jdbc.update("""
+                INSERT INTO br_recovery_attempt (id, rejection_id, revision, attempt_number,
+                    lease_token, started_at, outcome) VALUES (?, ?, ?, ?, ?, ?, 'RUNNING')
+                """, UUID.randomUUID(), claimed.id(), claimed.currentRevision(),
+                    claimed.attemptCount(), claimed.leaseToken(), time(now));
+            insertWorkerAudit(current, claimed, AuditAction.CLAIMED, "CLAIMED");
+            return Optional.of(RecoveryClaim.from(claimed));
+        }));
+    }
+
+    @Override
+    public boolean execute(RecoveryClaim claim, Consumer<RecoveryWork> callback) {
+        requireWorkerBoundary();
+        Objects.requireNonNull(callback);
+        return Boolean.TRUE.equals(workerTransactions.execute(tx -> {
+            var locked = lockClaim(claim);
+            if (locked.isEmpty()) return false;
+            Rejection current = locked.orElseThrow();
+            if (!current.leaseExpiresAt().isAfter(databaseNow())) return false;
+            var revision = jdbc.queryForObject("""
+                SELECT * FROM br_payload_revision WHERE rejection_id = ? AND revision = ?
+                """, REVISION, current.id(), current.currentRevision());
+            Objects.requireNonNull(revision, "Pinned payload revision");
+            // Bound database statements; handler must also bound CPU and any blocking work itself.
+            jdbc.execute("SET LOCAL statement_timeout = '30s'");
+            jdbc.execute("SET LOCAL lock_timeout = '5s'");
+            callback.accept(new RecoveryWork(current, revision.payload()));
+            if (tx.isRollbackOnly()) throw new IllegalStateException("Recovery transaction marked rollback-only");
+            var completed = current.recovered(transitionTime(current));
+            updateWorkerState(current, completed);
+            finishAttempt(current, completed.updatedAt(), AttemptOutcome.RECOVERED, null);
+            insertWorkerAudit(current, completed, AuditAction.RECOVERED, "RECOVERED");
+            return true;
+        }));
+    }
+
+    @Override
+    public Optional<RejectionStatus> fail(RecoveryClaim claim, RecoveryFailure failure, Duration delay) {
+        requireWorkerBoundary();
+        if (failure == RecoveryFailure.LEASE_EXPIRED) {
+            throw new IllegalArgumentException("Use the lease reaper for expired claims");
+        }
+        validateDelay(delay);
+        return Objects.requireNonNull(workerTransactions.execute(tx ->
+                lockClaim(claim).map(current -> finishFailure(current, failure, delay))));
+    }
+
+    @Override
+    public boolean reapExpired(String scope, IntFunction<Duration> delayForAttempt) {
+        requireWorkerBoundary();
+        validateScope(scope);
+        Objects.requireNonNull(delayForAttempt);
+        return Boolean.TRUE.equals(workerTransactions.execute(tx -> {
+            var expired = jdbc.query("""
+                SELECT * FROM br_rejection WHERE application_scope = ? AND status = 'RUNNING'
+                AND lease_expires_at <= clock_timestamp()
+                ORDER BY lease_expires_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
+                """, REJECTION, scope);
+            if (expired.isEmpty()) return false;
+            var current = expired.getFirst();
+            var delay = delayForAttempt.apply(current.attemptCount());
+            validateDelay(delay);
+            finishFailure(current, RecoveryFailure.LEASE_EXPIRED, delay);
+            return true;
+        }));
+    }
+
+    @Override
+    public List<RecoveryAttempt> findAttempts(UUID id) {
+        return jdbc.query("SELECT * FROM br_recovery_attempt WHERE rejection_id = ? ORDER BY attempt_number",
+                ATTEMPT, id);
+    }
+
+    private Optional<Rejection> lockClaim(RecoveryClaim claim) {
+        return jdbc.query("""
+                SELECT * FROM br_rejection WHERE id = ? AND application_scope = ?
+                AND status = 'RUNNING' AND lease_token = ? FOR UPDATE SKIP LOCKED
+                """, REJECTION, claim.rejectionId(), claim.applicationScope(), claim.leaseToken())
+                .stream().findFirst().filter(claim::matches);
+    }
+
+    private RejectionStatus finishFailure(Rejection current, RecoveryFailure failure, Duration delay) {
+        var updated = current.failed(failure, delay, transitionTime(current));
+        var status = updated.status();
+        AttemptOutcome outcome = status == RejectionStatus.DEAD ? AttemptOutcome.DEAD
+                : failure == RecoveryFailure.LEASE_EXPIRED ? AttemptOutcome.EXPIRED
+                : failure == RecoveryFailure.VALIDATION_FAILED ? AttemptOutcome.VALIDATION_FAILURE
+                : AttemptOutcome.RETRYABLE_FAILURE;
+        AuditAction action = status == RejectionStatus.DEAD ? AuditAction.DEAD
+                : status == RejectionStatus.PENDING ? AuditAction.VALIDATION_FAILED : AuditAction.RETRY_SCHEDULED;
+        updateWorkerState(current, updated);
+        finishAttempt(current, updated.updatedAt(), outcome, failure.name());
+        insertWorkerAudit(current, updated, action, failure.name());
+        return status;
+    }
+
+    private void updateWorkerState(Rejection previous, Rejection next) {
+        int count = jdbc.update("""
+            UPDATE br_rejection SET status=?, attempt_count=?, next_attempt_at=?, lease_token=?,
+                lease_expires_at=?, version=?, updated_at=?
+            WHERE id=? AND version=? AND status=? AND lease_token IS NOT DISTINCT FROM CAST(? AS uuid)
+            """, next.status().name(), next.attemptCount(), time(next.nextAttemptAt()), next.leaseToken(),
+                time(next.leaseExpiresAt()), next.version(), time(next.updatedAt()), previous.id(),
+                previous.version(), previous.status().name(), previous.leaseToken());
+        if (count != 1) throw new OptimisticLockException(previous.id());
+    }
+
+    private void finishAttempt(Rejection current, Instant now, AttemptOutcome outcome, String code) {
+        int count = jdbc.update("""
+            UPDATE br_recovery_attempt SET finished_at=?, outcome=?, error_code=?
+            WHERE rejection_id=? AND attempt_number=? AND lease_token=? AND outcome='RUNNING'
+            """, time(now), outcome.name(), code, current.id(), current.attemptCount(), current.leaseToken());
+        if (count != 1) throw new IllegalStateException("Attempt was not active");
+    }
+
+    private void insertWorkerAudit(Rejection previous, Rejection next, AuditAction action, String reason) {
+        insertAudit(new AuditEvent(UUID.randomUUID(), next.id(), next.version(), action,
+                "recovery-engine", reason, previous.status(), next.status(), next.updatedAt()));
+    }
+
+    private Instant databaseNow() {
+        return Objects.requireNonNull(jdbc.queryForObject("SELECT clock_timestamp()", OffsetDateTime.class)).toInstant();
+    }
+
+    private Instant transitionTime(Rejection current) {
+        Instant now = databaseNow();
+        return now.isBefore(current.updatedAt()) ? current.updatedAt() : now;
+    }
+
+    private static void validateScope(String scope) {
+        if (scope == null || scope.isBlank() || scope.length() > 128) {
+            throw new IllegalArgumentException("Invalid application scope");
+        }
+    }
+
+    private static void validateDelay(Duration delay) {
+        if (delay.compareTo(Duration.ofMillis(1)) < 0 || delay.compareTo(Duration.ofDays(30)) > 0) {
+            throw new IllegalArgumentException("Invalid retry delay");
+        }
+    }
+
+    private static void requireWorkerBoundary() {
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("Recovery worker must run outside any enclosing transaction");
+        }
+    }
+
+    private static final RowMapper<RecoveryAttempt> ATTEMPT = (rs, row) -> new RecoveryAttempt(
+            rs.getObject("id", UUID.class), rs.getObject("rejection_id", UUID.class),
+            rs.getInt("revision"), rs.getInt("attempt_number"), rs.getObject("lease_token", UUID.class),
+            instant(rs, "started_at"), instant(rs, "finished_at"),
+            AttemptOutcome.valueOf(rs.getString("outcome")), rs.getString("error_code"));
 
     private void insertRevision(PayloadRevision p) {
         jdbc.update("""

@@ -41,7 +41,8 @@ class JdbcRejectionRepositoryIT {
                 POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("DROP TABLE IF EXISTS br_recovery_attempt, br_audit_event, br_payload_revision, br_rejection CASCADE");
-        new ResourceDatabasePopulator(new ClassPathResource("db/batchrecover/V1__create_batchrecover_tables.sql"))
+        new ResourceDatabasePopulator(new ClassPathResource("db/batchrecover/V1__create_batchrecover_tables.sql"),
+                new ClassPathResource("db/batchrecover/V2__scope_worker_indexes.sql"))
                 .execute(dataSource);
         manager = new JdbcTransactionManager(dataSource);
         repository = new JdbcRejectionRepository(dataSource, manager);

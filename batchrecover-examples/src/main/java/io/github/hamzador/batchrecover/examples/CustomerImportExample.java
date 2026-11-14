@@ -2,6 +2,12 @@ package io.github.hamzador.batchrecover.examples;
 
 import io.github.hamzador.batchrecover.core.domain.ErrorCategory;
 import io.github.hamzador.batchrecover.core.service.RejectionService;
+import io.github.hamzador.batchrecover.core.service.RecoveryEngine;
+import io.github.hamzador.batchrecover.core.service.RecoverySettings;
+import io.github.hamzador.batchrecover.core.service.RecoveryHandlerRegistry;
+import io.github.hamzador.batchrecover.core.service.RetryPolicy;
+import io.github.hamzador.batchrecover.core.domain.RecoveryResult;
+import java.time.Duration;
 import io.github.hamzador.batchrecover.springbatch.*;
 import io.github.hamzador.batchrecover.storage.jdbc.JdbcRejectionRepository;
 import org.springframework.batch.core.BatchStatus;
@@ -35,6 +41,7 @@ public final class CustomerImportExample {
     private final JobRepository jobRepository;
     private final TaskExecutorJobOperator operator;
     private final RejectionService service;
+    private final JdbcRejectionRepository rejections;
 
     public CustomerImportExample(DataSource dataSource) throws Exception {
         jdbc = new JdbcTemplate(dataSource);
@@ -48,13 +55,15 @@ public final class CustomerImportExample {
         operator.setJobRepository(jobRepository);
         operator.setJobRegistry(new MapJobRegistry());
         operator.afterPropertiesSet();
-        service = new RejectionService(new JdbcRejectionRepository(dataSource, transactions), Clock.systemUTC());
+        rejections = new JdbcRejectionRepository(dataSource, transactions);
+        service = new RejectionService(rejections, Clock.systemUTC());
     }
 
     public static void initialize(DataSource dataSource) {
         new ResourceDatabasePopulator(
                 new ClassPathResource("org/springframework/batch/core/schema-postgresql.sql"),
                 new ClassPathResource("db/batchrecover/V1__create_batchrecover_tables.sql"),
+                new ClassPathResource("db/batchrecover/V2__scope_worker_indexes.sql"),
                 new ClassPathResource("db/example/customer.sql")).execute(dataSource);
     }
 
@@ -111,6 +120,35 @@ public final class CustomerImportExample {
         return operator.start(job, new JobParametersBuilder().addString("inputId", inputId).toJobParameters());
     }
 
+    public int recoverThreeCustomers() {
+        var ids = jdbc.query("""
+                SELECT id FROM br_rejection WHERE application_scope='customer-demo' AND status='PENDING'
+                ORDER BY source_occurrence_id LIMIT 3
+                """, (rs, row) -> rs.getObject("id", UUID.class));
+        var codec = new CustomerPayloadCodec();
+        for (UUID id : ids) {
+            var current = service.get(id);
+            var original = rejections.findRevisions(id).getFirst().payload();
+            var customer = codec.decode(original.encoded(), original.schemaVersion());
+            var corrected = new Customer(customer.sourceRow(), "recovered" + customer.sourceRow() + "@example.org");
+            var updated = service.correct(id, current.version(),
+                    new io.github.hamzador.batchrecover.core.domain.ReplayPayload(codec.typeId(), codec.schemaVersion(), codec.encode(corrected)),
+                    "demo-operator", "correct synthetic email");
+            service.queue(id, updated.version(), "demo-operator", "request replay");
+        }
+        var registry = new RecoveryHandlerRegistry(List.of(
+                new RecoveryHandlerRegistry.Registration<>("customer-import", codec,
+                        new CustomerRecoveryHandler(jdbc))));
+        var engine = new RecoveryEngine(rejections, registry,
+                new RecoverySettings("customer-demo", Duration.ofSeconds(30),
+                        new RetryPolicy(Duration.ofSeconds(1), Duration.ofMinutes(1))));
+        int recovered = 0;
+        for (int i = 0; i < ids.size(); i++) {
+            if (engine.runOnce() == RecoveryResult.RECOVERED) recovered++;
+        }
+        return recovered;
+    }
+
     public static void main(String[] args) throws Exception {
         var source = new DriverManagerDataSource(requiredEnv("DEMO_JDBC_URL"),
                 requiredEnv("DEMO_DB_USER"), requiredEnv("DEMO_DB_PASSWORD"));
@@ -127,6 +165,12 @@ public final class CustomerImportExample {
         if (execution.getStatus() != BatchStatus.COMPLETED || step.getWriteCount() != 90
                 || step.getProcessSkipCount() != 10) {
             throw new IllegalStateException("Unexpected sample outcome");
+        }
+        if (List.of(args).contains("--recover-three")) {
+            int recovered = demo.recoverThreeCustomers();
+            System.out.printf("recovered=%d customers=%d%n", recovered,
+                    demo.jdbc.queryForObject("SELECT count(*) FROM demo_customer", Integer.class));
+            if (recovered != 3) throw new IllegalStateException("Unexpected recovery outcome");
         }
     }
 
