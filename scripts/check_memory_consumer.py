@@ -31,7 +31,7 @@ def main():
         for forbidden in ("io.github.hamzador:batchrecover-storage-jdbc:",
                           "org.springframework:spring-web:", "org.springframework:spring-webmvc:",
                           "org.hibernate.orm:hibernate-core:", "org.postgresql:postgresql:",
-                          "com.mysql:mysql-connector-j:", "com.oracle.database.jdbc:ojdbc",
+                          "com.h2database:h2:", "com.mysql:mysql-connector-j:", "com.oracle.database.jdbc:ojdbc",
                           "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:",
                           "org.mockito:", "org.junit.jupiter:"):
             if forbidden in tree:
@@ -40,6 +40,25 @@ def main():
             if required not in tree:
                 raise ValueError(f"Missing expected runtime module: {required}")
         print("Memory consumer: optional JDBC adapter, vendor drivers, web/ORM and test tools absent")
+        content = pom.read_text().replace("</dependencies>", """
+          <dependency><groupId>io.github.hamzador</groupId>
+          <artifactId>batchrecover-storage-jdbc</artifactId>
+          <version>""" + VERSION + """</version></dependency></dependencies>""")
+        pom.write_text(content)
+        deps.unlink()
+        subprocess.run([str(ROOT / "mvnw"), "-B", "-ntp", "-f", str(pom),
+                        "org.apache.maven.plugins:maven-dependency-plugin:3.9.0:tree",
+                        "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
+        tree = deps.read_text()
+        if "io.github.hamzador:batchrecover-storage-jdbc:" not in tree:
+            raise ValueError("Missing JDBC adapter in JDBC consumer")
+        for forbidden in ("org.postgresql:postgresql:", "com.mysql:mysql-connector-j:",
+                          "com.oracle.database.jdbc:ojdbc", "com.h2database:h2:",
+                          "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:",
+                          "org.mockito:", "org.junit.jupiter:"):
+            if forbidden in tree:
+                raise ValueError(f"Unexpected JDBC runtime dependency: {forbidden}")
+        print("JDBC consumer: all vendor drivers and test tools absent")
     for module in MODULES:
         path = ROOT / module / "target" / f"{module}-{VERSION}.jar"
         print(f"Library JAR: {module}: {path.stat().st_size} bytes")

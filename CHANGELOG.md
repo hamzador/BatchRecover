@@ -5,6 +5,7 @@
 - Capture sequential Spring Batch 6 processor skips in the original JDBC chunk transaction.
 - Store immutable original payload and correction history, versioned rejection state and audit events in PostgreSQL.
 - Explicit typed handlers, scoped concurrent workers, leases, fencing, attempt history, capped jittered retry and local transactional replay.
+- Extensible JDBC dialect registry, offline SQL generation and real-engine integration tests (PostgreSQL, MySQL, Oracle, H2 targets).
 - Bounded single-JVM memory storage, optional JDBC, common storage capabilities and shared contract tests.
 - Opt-in Spring Boot starter, typed properties, listener factory, host-driven Micrometer worker facade.
 - Customer import and targeted recovery demonstration; tests for rollback, restart, concurrency and recovery.

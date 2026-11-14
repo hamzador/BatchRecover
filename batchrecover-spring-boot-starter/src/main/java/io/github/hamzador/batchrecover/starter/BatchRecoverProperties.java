@@ -36,9 +36,13 @@ public record BatchRecoverProperties(
     public record Storage(@DefaultValue("jdbc") StorageType type,
                           @DefaultValue("1000") int maxRecords,
                           @DefaultValue("8") int maxRevisionsPerRecord,
-                          @DefaultValue("16777216") long maxPayloadBytes) {
+                          @DefaultValue("16777216") long maxPayloadBytes,
+                          @DefaultValue("auto") String dialect) {
         public Storage {
             Objects.requireNonNull(type);
+            if (dialect == null || !dialect.matches("[A-Za-z0-9_-]{1,64}")) {
+                throw new IllegalArgumentException("Invalid SQL dialect name");
+            }
             new MemoryStorageLimits(maxRecords, maxRevisionsPerRecord, maxPayloadBytes);
         }
 

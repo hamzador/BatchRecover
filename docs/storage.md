@@ -34,7 +34,7 @@ List pending rejects using RecoveryStorage.findPending(scope, limit) (1–1000).
 
 ## JDBC and custom storage
 
-For existing JDBC users, enabled=true without storage.type still selects JDBC; add the batchrecover-storage-jdbc artifact explicitly. Set storage.type=jdbc for new apps. Missing classes or missing/ambiguous transaction manager fail startup rather than falling back to memory. Existing V1 and V2 migrations and JDBC guarantees are unchanged. PostgreSQL is the only validated SQL backend; dialects and schema generation are Sprint 7, not silently supported today. Do not mix backing stores for capture and recovery.
+For existing JDBC users, enabled=true without storage.type still selects JDBC; add the batchrecover-storage-jdbc artifact explicitly. Set storage.type=jdbc for new apps. Missing classes or missing/ambiguous transaction manager fail startup rather than falling back to memory. Existing V1 and V2 migrations and JDBC guarantees are unchanged. Sprint 7 adds dialect selection and offline migrations targeting PostgreSQL, MySQL, Oracle and H2; support is contingent on the real-engine CI. See [SQL dialects](sql-dialects.md). Do not mix backing stores for capture and recovery.
 
 Custom providers can implement RecoveryStorage or supply both existing ports as beans and set storage.type=custom. Custom capture is transactional by default (mandatory capture must be implemented); direct Java users may explicitly choose nontransactional CaptureSettings only if they accept the implications. No automatic schema creation, no automatic scheduler.
 

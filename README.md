@@ -29,6 +29,7 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Recovery engine](docs/recovery-engine.md)
 - [Spring Boot starter and configuration](docs/starter.md)
 - [Storage architecture and capabilities](docs/storage.md)
+- [SQL dialects and migration generator](docs/sql-dialects.md)
 - [Release preparation and remaining gates](docs/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 

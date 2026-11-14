@@ -1,9 +1,6 @@
 # JDBC adapter
 
-Optional PostgreSQL 16 implementation of the storage ports. Add this artifact explicitly alongside the starter for JDBC mode. Apply the versioned SQL at
-`classpath:db/batchrecover/V1__create_batchrecover_tables.sql`
-once through the host application's migration system (e.g. a dedicated Flyway configuration and history table).
-No automatic migration or schema changes are performed by the starter. Do not rerun V1 on an existing installation.
+Dialect-aware JDBC storage with offline schema generation. See [SQL dialects](../docs/sql-dialects.md) for target versions, setup, migration CLI, portable type representation and transaction boundaries. PostgreSQL V1/V2 migrations remain unchanged; other engines use generated V1/V2 scripts. No production driver is included.
 
 ```java
 var transactionManager = new JdbcTransactionManager(dataSource);
