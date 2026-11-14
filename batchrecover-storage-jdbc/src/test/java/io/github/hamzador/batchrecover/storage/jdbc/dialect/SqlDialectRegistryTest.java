@@ -16,6 +16,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SqlDialectRegistryTest {
     @Mock private DatabaseMetaData metadata;
+    @org.mockito.Spy private List<SqlDialect> extensions = new java.util.ArrayList<>();
     @InjectMocks private SqlDialectRegistry registry;
 
     @Test
