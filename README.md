@@ -4,7 +4,7 @@
 
 BatchRecover is a proposed Java library for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: design / pre-alpha. Initial build scaffold and domain types are under development; no recovery implementation or published Maven artifact yet. API examples describe intended behavior, not supported functionality.
+> Status: design / pre-alpha. Core and processor-skip capture are under development; no replay engine or published Maven artifact yet. API examples describe intended behavior, not supported functionality.
 
 ## Why?
 
@@ -25,6 +25,7 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Architecture and technical specification](docs/architecture.md)
 - [Roadmap, acceptance criteria and test strategy](docs/roadmap.md)
 - [Core and PostgreSQL persistence](docs/core-persistence.md)
+- [Spring Batch adapter and example](docs/spring-batch-adapter.md)
 
 ## Proposed usage
 
@@ -43,7 +44,7 @@ Step customerImport(JobRepository jobRepository,
             .faultTolerant()
             .skip(InvalidCustomerException.class)
             .skipLimit(100)
-            .listener(recoveryListener)
+            .skipListener(recoveryListener)
             .build();
 }
 ```

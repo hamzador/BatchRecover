@@ -7,6 +7,7 @@ import io.github.hamzador.batchrecover.core.port.RejectionRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public final class JdbcRejectionRepository implements RejectionRepository {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
+    private final TransactionTemplate mandatoryTransactions;
 
     public JdbcRejectionRepository(DataSource dataSource, JdbcTransactionManager transactionManager) {
         Objects.requireNonNull(dataSource, "dataSource");
@@ -36,6 +38,14 @@ public final class JdbcRejectionRepository implements RejectionRepository {
         }
         this.jdbc = new JdbcTemplate(dataSource);
         this.transactions = new TransactionTemplate(transactionManager);
+        this.mandatoryTransactions = new TransactionTemplate(transactionManager);
+        this.mandatoryTransactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_MANDATORY);
+    }
+
+    @Override
+    public Rejection captureInExistingTransaction(Rejection rejection, PayloadRevision original, AuditEvent audit) {
+        return Objects.requireNonNull(mandatoryTransactions.execute(
+                tx -> capture(rejection, original, audit)));
     }
 
     @Override

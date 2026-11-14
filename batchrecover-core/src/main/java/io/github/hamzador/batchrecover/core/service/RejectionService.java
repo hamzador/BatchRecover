@@ -23,12 +23,22 @@ public class RejectionService {
     }
 
     public Rejection capture(CaptureRequest request) {
+        return capture(request, false);
+    }
+
+    public Rejection captureInExistingTransaction(CaptureRequest request) {
+        return capture(request, true);
+    }
+
+    private Rejection capture(CaptureRequest request, boolean existingTransactionRequired) {
         Instant now = now();
         Rejection rejection = Rejection.capture(UUID.randomUUID(), request, now);
         PayloadRevision original = new PayloadRevision(rejection.id(), 0, request.payload(),
                 "system", "capture", now);
         AuditEvent audit = audit(rejection, null, AuditAction.CAPTURED, "system", "capture");
-        return repository.capture(rejection, original, audit);
+        return existingTransactionRequired
+                ? repository.captureInExistingTransaction(rejection, original, audit)
+                : repository.capture(rejection, original, audit);
     }
 
     public Rejection get(UUID id) {

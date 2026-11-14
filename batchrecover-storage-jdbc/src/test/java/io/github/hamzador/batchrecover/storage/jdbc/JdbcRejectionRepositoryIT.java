@@ -164,6 +164,23 @@ class JdbcRejectionRepositoryIT {
         assertEquals(RejectionStatus.QUEUED, service.get(captured.id()).status());
     }
 
+    @Test
+    void shouldRejectTransactionalCaptureWithoutExistingTransaction() {
+        assertThrows(org.springframework.transaction.IllegalTransactionStateException.class,
+                () -> service.captureInExistingTransaction(request));
+        assertEquals(0, rowCount());
+    }
+
+    @Test
+    void shouldJoinExistingTransactionForMandatoryCapture() {
+        new TransactionTemplate(manager).executeWithoutResult(tx -> {
+            service.captureInExistingTransaction(request);
+            assertEquals(1, rowCount());
+            tx.setRollbackOnly();
+        });
+        assertEquals(0, rowCount());
+    }
+
     private int rowCount() {
         return jdbc.queryForObject("SELECT count(*) FROM br_rejection", Integer.class);
     }

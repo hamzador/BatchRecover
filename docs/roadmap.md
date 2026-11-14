@@ -1,6 +1,6 @@
 # Roadmap and quality gates
 
-Status: M0 build verified and merged; M1 implementation under review, CI is the acceptance gate. M2–M4 remain planned.
+Status: M0 and M1 builds verified and merged; M2 adapter implementation under review. CI is the acceptance gate. M3–M4 remain planned.
 
 ## M0 — Project foundation
 - [ ] Confirm proposed Apache-2.0 license and Maven namespace (io.github.hamzador).
@@ -13,13 +13,14 @@ Acceptance: fresh clone builds and tests; dependency tree uses the intended Spri
 
 ## M1 — Domain and storage
 See [implementation notes](core-persistence.md). Mark acceptance complete only after CI passes.
-- [ ] Define rejection identity, payload revisions, status transitions, retry policy and repository ports.
-- [ ] Versioned PostgreSQL DDL, unique key, revision history, auditing, optimistic updates.
-- [ ] Integration-test atomic insertion and duplicate capture under concurrent access.
+- [x] Define rejection identity, payload revisions, status transitions, retry policy and repository ports.
+- [x] Versioned PostgreSQL DDL, unique key, revision history, auditing, optimistic updates.
+- [x] Integration-test atomic insertion and duplicate capture under concurrent access.
 
 Acceptance: duplicate capture returns original record without mutation; state violations fail; migration works on empty database.
 
 ## M2 — Spring Batch capture
+See [adapter implementation](spring-batch-adapter.md). Mark acceptance complete after CI.
 - [ ] Explicit registration for processor skips on opted-in steps.
 - [ ] Resolve provenance, enforce stable identity and approved payload codec.
 - [ ] Use the original chunk transaction. Fail closed on repository error.
