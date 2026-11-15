@@ -27,6 +27,8 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Core and PostgreSQL persistence](docs/core-persistence.md)
 - [Spring Batch adapter and example](docs/spring-batch-adapter.md)
 - [Recovery engine](docs/recovery-engine.md)
+- [Quick start and troubleshooting](docs/quickstart.md)
+- [Java API and extension guide](docs/api.md)
 - [Spring Boot starter and configuration](docs/starter.md)
 - [Storage architecture and capabilities](docs/storage.md)
 - [SQL dialects and migration generator](docs/sql-dialects.md)
