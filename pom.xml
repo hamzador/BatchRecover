@@ -39,6 +39,8 @@
         <module>batchrecover-coverage</module>
     </modules>
     <properties>
+        <!-- Remote deployment is disabled until a separate, explicitly approved publication change. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
         <java.version>21</java.version>
         <jacoco.version>0.8.14</jacoco.version>
         <argLine></argLine>
@@ -61,6 +63,23 @@
     <build>
         <pluginManagement>
             <plugins>
+                <!-- Prepared, not activated. No publishing extension or deploy execution. -->
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>0.12.0</version>
+                    <configuration>
+                        <publishingServerId>central</publishingServerId>
+                        <autoPublish>false</autoPublish>
+                        <skipUpload>true</skipUpload>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.2.8</version>
+                    <configuration><bestPractices>true</bestPractices></configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>

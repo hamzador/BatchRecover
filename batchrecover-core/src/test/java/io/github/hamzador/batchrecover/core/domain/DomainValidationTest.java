@@ -35,6 +35,21 @@ class DomainValidationTest {
     }
 
     @Test
+    void shouldRejectMalformedUnicodeMetadataWithoutChangingValidSupplementaryCharacters() {
+        for (char surrogate : new char[]{(char) 0xd800, (char) 0xdc00}) {
+            String malformed = "row" + surrogate;
+            assertThrows(IllegalArgumentException.class, () -> new RejectionIdentity(malformed, 0, "step", "row"));
+            assertThrows(IllegalArgumentException.class, () -> new RejectionIdentity("app", 0, malformed, "row"));
+            assertThrows(IllegalArgumentException.class, () -> new RejectionIdentity("app", 0, "step", malformed));
+            assertThrows(IllegalArgumentException.class, () -> new ReplayPayload(malformed, 1, "{}"));
+            assertThrows(IllegalArgumentException.class, () -> new PayloadRevision(ID, 0, PAYLOAD, malformed, "reason", NOW));
+        }
+        String valid = "row" + new String(Character.toChars(0x1f600));
+        assertEquals(valid, new RejectionIdentity("app", 0, "step", valid).sourceOccurrenceId());
+        assertEquals(valid, new ReplayPayload("type", 1, valid).encoded());
+    }
+
+    @Test
     void shouldValidateCaptureAttemptBudgetBoundaries() {
         for (int budget : new int[]{1, 100}) {
             assertEquals(budget, request(budget).maxAttempts());

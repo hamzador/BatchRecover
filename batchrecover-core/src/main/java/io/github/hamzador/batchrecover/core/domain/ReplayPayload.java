@@ -12,8 +12,7 @@ public record ReplayPayload(String typeId, int schemaVersion, String encoded) {
             throw new IllegalArgumentException("schemaVersion must be positive");
         }
         DomainChecks.text(encoded, "encoded", MAX_BYTES);
-        if (encoded.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES
-                || !StandardCharsets.UTF_8.newEncoder().canEncode(encoded)) {
+        if (encoded.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) {
             throw new IllegalArgumentException("Invalid payload encoding or size");
         }
     }

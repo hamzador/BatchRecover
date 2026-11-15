@@ -9,8 +9,8 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 | 6 | Generic storage capabilities, bounded memory, optional JDBC, shared tests | Merged; 118 Java tests, 95.1% lines, 71.6% branches |
 | 7 | Extensible JDBC dialects and schema generation | Merged; 167 tests, all four engines validated |
 | 8 | Quality, mutation tests, performance and dependency footprint | Merged; 244 tests, 98.34% lines, 91.10% branches, 93.51% PIT |
-| 9 | Developer experience and examples | Implementation under review |
-| 10 | Release 0.1.0 after owner approval | Planned |
+| 9 | Developer experience and examples | Merged; 246 tests, 98.43% lines, 91.25% branches, 93.51% PIT |
+| 10 | Release 0.1.0 after owner approval | Local signed rehearsal under review; owner license/namespace/signature pending |
 
 ## Sprint 6 — Generic storage
 - Core ports and capabilities, bounded memory, explicitly selected JDBC or memory or custom.

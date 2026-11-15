@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -41,7 +41,7 @@ jobs:
           -DincludeTestScope=true -DoutputReactorProjects=false -DskipNotDeployed=false
           -Dcyclonedx.skipAttach=true -DoutputFormat=json
       - name: Audit known dependency vulnerabilities
-        run: python3 scripts/audit_dependencies.py target/bom.json --output target/osv-report.json --report-only
+        run: python3 scripts/audit_dependencies.py target/bom.json --output target/osv-report.json
       - name: Validate local release staging (no upload)
         run: python3 scripts/stage_release.py
       - name: Publish coverage summary
@@ -68,6 +68,8 @@ jobs:
       - name: Quality hardening summary
         shell: bash
         run: python3 scripts/quality_report.py --strict | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Sign and verify disposable non-SNAPSHOT release rehearsal (no upload)
+        run: bash scripts/rehearse_release.sh
       - name: Upload quality and staging artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,6 +83,8 @@ jobs:
             target/bom.json
             target/osv-report.json
             target/batchrecover-local-preview.zip
+            target/batchrecover-0.1.0-DO-NOT-UPLOAD.zip
+            target/rehearsal-public-key.asc
           if-no-files-found: warn
       - name: Upload test reports
         if: always()
