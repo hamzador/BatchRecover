@@ -123,7 +123,7 @@ Disabled by default; explicit step enrollment and payload allowlist, size limit 
 - ADR-003: JDBC and PostgreSQL first, favor explicit transaction semantics over ORM abstractions.
 - ADR-004: replay handler is explicit and registered; no arbitrary job restart.
 - ADR-005: Local Java API only; no REST/dashboard in the library roadmap. 
-- ADR-006: Apache-2.0 and io.github.hamzador are proposals pending owner decision and namespace verification.
+- ADR-006: Apache-2.0 adopted by the owner; io.github.hamzador verified in Central Portal. Publication requires separate approval.
 - ADR-007: Storage contracts in core, bounded memory and optional JDBC; no silent fallback or speculative providers.
 
 ## References

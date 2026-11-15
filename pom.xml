@@ -28,7 +28,13 @@
             <url>https://github.com/hamzador</url>
         </developer>
     </developers>
-    <!-- License metadata intentionally pending owner approval. Not publishable yet. -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <modules>
         <module>batchrecover-core</module>
         <module>batchrecover-storage-memory</module>
@@ -61,6 +67,18 @@
         </dependency>
     </dependencies>
     <build>
+        <!-- All direct library modules package the same repository license in their binary JAR. -->
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>META-INF</targetPath>
+                <filtering>false</filtering>
+                <includes><include>LICENSE</include></includes>
+            </resource>
+        </resources>
         <pluginManagement>
             <plugins>
                 <!-- Prepared, not activated. No publishing extension or deploy execution. -->

@@ -19,6 +19,25 @@ SUFFIXES = (".pom", ".jar", "-sources.jar", "-javadoc.jar")
 HASHES = ("md5", "sha1", "sha256", "sha512")
 FINGERPRINT = re.compile(r"[0-9A-F]{40,64}")
 
+def validate_license(root):
+    """Require the approved parent license and the repository license text."""
+    parent = ET.parse(root / "pom.xml").getroot()
+    license_node = parent.find("m:licenses/m:license", NS)
+    if (license_node is None
+            or license_node.findtext("m:name", namespaces=NS) != "Apache License, Version 2.0"
+            or license_node.findtext("m:url", namespaces=NS) != "https://www.apache.org/licenses/LICENSE-2.0"
+            or license_node.findtext("m:distribution", namespaces=NS) != "repo"):
+        raise ValueError("Missing or incorrect Apache-2.0 POM license metadata")
+    text = (root / "LICENSE").read_bytes()
+    if b"Version 2.0, January 2004" not in text or b"END OF TERMS AND CONDITIONS" not in text:
+        raise ValueError("Missing Apache-2.0 license text")
+    return text
+
+
+def validate_binary_license(jar, text):
+    if "META-INF/LICENSE" not in jar.namelist() or jar.read("META-INF/LICENSE") != text:
+        raise ValueError("Missing or inconsistent Apache-2.0 license in binary JAR")
+
 
 def entries(root):
     """Use only six POMs and fifteen distribution JARs, never the contract test JAR."""
@@ -32,6 +51,7 @@ def entries(root):
     for name in ("name", "description", "url", "scm/url", "developers/developer/id"):
         if not parent.findtext("/".join("m:" + part for part in name.split("/")), namespaces=NS):
             raise ValueError("Missing parent metadata: " + name)
+    license_text = validate_license(root)
     result = {}
     for module in ("batchrecover-parent", *MODULES):
         folder = root if module == "batchrecover-parent" else root / module
@@ -53,6 +73,8 @@ def entries(root):
                     expected = {".jar": ".class", "-sources.jar": ".java", "-javadoc.jar": ".html"}[suffix]
                     if jar.testzip() or not any(n.endswith(expected) for n in jar.namelist()):
                         raise ValueError("Invalid binary/source/Javadoc archive: " + str(path))
+                    if suffix == ".jar":
+                        validate_binary_license(jar, license_text)
             result[base + suffix] = path
     return result
 
@@ -111,7 +133,7 @@ def sign_bundle(root, output, home, fingerprint):
                         raise ValueError("Checksum mismatch: " + name)
         candidate.rename(output)
     print(f"Local signed rehearsal: {len(files)} artifacts, {len(files)} verified signatures, {len(files)*len(HASHES)} checksums")
-    print("NOT FOR UPLOAD: license and owner signing/namespace approval are pending.")
+    print("NOT FOR UPLOAD: official owner signing and publication approval are pending.")
 
 
 def main():

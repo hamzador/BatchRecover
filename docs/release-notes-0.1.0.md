@@ -5,6 +5,7 @@ Capture. Correct. Replay.
 First candidate for item-level recovery of sequential Spring Batch processor skips. Explicitly enroll a step, capture rejected input, review and correct a selected payload, then replay only eligible rejected records. Successful original rows are not rerun.
 
 ## Highlights
+- Licensed under Apache License 2.0; full text in the repository and binary JARs.
 - Java 21, Spring Boot 4.0.9 and Spring Batch 6.0.6 verified.
 - Pure Java domain and optional bounded volatile memory storage.
 - JDBC storage using the host driver/DataSource/transaction manager, real tests on PostgreSQL 16, MySQL 8.4, Oracle Free 23 and H2 2.4 native.
