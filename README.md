@@ -30,6 +30,7 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Spring Boot starter and configuration](docs/starter.md)
 - [Storage architecture and capabilities](docs/storage.md)
 - [SQL dialects and migration generator](docs/sql-dialects.md)
+- [Quality, mutation testing and benchmarks](docs/quality.md)
 - [Release preparation and remaining gates](docs/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 

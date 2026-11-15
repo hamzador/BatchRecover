@@ -7,8 +7,8 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 | 0–4 | Foundation, domain, JDBC, Spring Batch capture, recovery engine | Merged |
 | 5 | Starter, JaCoCo, OSV, SBOM, local unsigned staging | Merged; 84 Java tests, 94% lines, 70.6% branches |
 | 6 | Generic storage capabilities, bounded memory, optional JDBC, shared tests | Merged; 118 Java tests, 95.1% lines, 71.6% branches |
-| 7 | Extensible JDBC dialects and schema generation | Implementation under review |
-| 8 | Quality, mutation tests, performance and dependency footprint | Planned |
+| 7 | Extensible JDBC dialects and schema generation | Merged; 167 tests, all four engines validated |
+| 8 | Quality, mutation tests, performance and dependency footprint | Implementation under review |
 | 9 | Developer experience and examples | Planned |
 | 10 | Release 0.1.0 after owner approval | Planned |
 
@@ -24,6 +24,7 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 - Host supplies DataSource and drivers, no bundled vendor drivers. Verify real transactional semantics (locks, UUID/time types, constraints, concurrency, rollback and restart). Unsupported engines fail clearly; no generic unsafe SQL fallback.
 
 ## Sprint 8 — Quality
+See [quality guide](quality.md) for the actual report commands, regression baseline and release targets.
 - Target >=95% line/instruction coverage, >=90% branch coverage, >=85% mutation score on critical domain, subject to meaningful assertions, no artificial padding.
 - Retain all JDBC rollback/restart/concurrency tests; expand capacity, validation, expiry, storage errors and backend contracts. Use actual Testcontainers and no emulation as proof of dialect support.
 - English camelCase test names; Mockito @Mock, @InjectMocks and @Captor when appropriate; @BeforeEach for fixtures. Measure JAR size, transitive dependencies, memory and throughput; assess PIT, JMH and static analysis without runtime baggage.

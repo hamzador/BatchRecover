@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
     private DataSource source;
+    private com.zaxxer.hikari.HikariDataSource pool;
     private JdbcTransactionManager manager;
     private JdbcTemplate jdbc;
     protected abstract DataSource dataSource();
@@ -29,7 +30,15 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
 
     @org.junit.jupiter.api.BeforeAll
     void initializeSchema() {
-        source = dataSource();
+        // Reuse bounded real backend connections under contention. Rapid connection churn
+        // can exhaust the small Oracle Free listener's server process budget.
+        var configuration = new com.zaxxer.hikari.HikariConfig();
+        configuration.setDataSource(dataSource());
+        configuration.setMaximumPoolSize(8);
+        configuration.setMinimumIdle(0);
+        configuration.setConnectionTimeout(20_000);
+        pool = new com.zaxxer.hikari.HikariDataSource(configuration);
+        source = pool;
         manager = new JdbcTransactionManager(source);
         jdbc = new JdbcTemplate(source);
         var detected = new JdbcRejectionRepository(source, manager);
@@ -39,6 +48,11 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
         }
         jdbc.execute("CREATE TABLE dialect_effect (id VARCHAR(36) PRIMARY KEY, payload VARCHAR(100) NOT NULL)"
                 + (expectedDialect() == StandardSqlDialect.MYSQL ? " ENGINE=InnoDB" : ""));
+    }
+
+    @org.junit.jupiter.api.AfterAll
+    void closePool() {
+        if (pool != null) pool.close();
     }
 
     @Override protected RecoveryStorage createStorage() {
@@ -120,5 +134,20 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
         assertEquals(r, second.findById(r.id()).orElseThrow());
         assertEquals("invalid", second.findRevisions(r.id()).getFirst().payload().encoded());
         assertTrue(second.claimNext("app", LEASE).isPresent());
+    }
+    @Test
+    void shouldPreserveOuterTransactionAfterDuplicateCapture() {
+        var request = request("app", "duplicate", "bad", 3);
+        new TransactionTemplate(manager).executeWithoutResult(tx -> {
+            var first = service.captureInExistingTransaction(request);
+            var duplicate = service.captureInExistingTransaction(request);
+            assertEquals(first.id(), duplicate.id());
+            service.captureInExistingTransaction(request("app", "other", "bad", 3));
+            assertEquals(2, storage.findPending("app", 10).size());
+            tx.setRollbackOnly();
+        });
+        assertTrue(storage.findPending("app", 10).isEmpty());
+        assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM br_payload_revision", Long.class));
+        assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM br_audit_event", Long.class));
     }
 }

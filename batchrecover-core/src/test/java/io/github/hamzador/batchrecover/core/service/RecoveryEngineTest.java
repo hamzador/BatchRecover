@@ -87,4 +87,27 @@ class RecoveryEngineTest {
         assertEquals(RecoveryResult.STALE_CLAIM, engine.runOnce());
         verify(repository, never()).fail(any(), any(), any());
     }
+    @Test
+    void shouldReturnDeadWhenBudgetIsExhausted() {
+        when(repository.claimNext("app", Duration.ofSeconds(30))).thenReturn(Optional.of(claim));
+        when(repository.execute(eq(claim), any())).thenThrow(new HandlerExecutionException(RecoveryFailure.HANDLER_FAILED));
+        when(repository.fail(eq(claim), eq(RecoveryFailure.HANDLER_FAILED), any())).thenReturn(Optional.of(RejectionStatus.DEAD));
+        assertEquals(RecoveryResult.DEAD, engine.runOnce());
+    }
+
+    @Test
+    void shouldReturnStaleWhenFailureFinalizationLosesFence() {
+        when(repository.claimNext("app", Duration.ofSeconds(30))).thenReturn(Optional.of(claim));
+        when(repository.execute(eq(claim), any())).thenThrow(new HandlerExecutionException(RecoveryFailure.HANDLER_FAILED));
+        when(repository.fail(eq(claim), eq(RecoveryFailure.HANDLER_FAILED), any())).thenReturn(Optional.empty());
+        assertEquals(RecoveryResult.STALE_CLAIM, engine.runOnce());
+    }
+
+    @Test
+    void shouldRejectInvalidStatusReturnedByStorage() {
+        when(repository.claimNext("app", Duration.ofSeconds(30))).thenReturn(Optional.of(claim));
+        when(repository.execute(eq(claim), any())).thenThrow(new HandlerExecutionException(RecoveryFailure.HANDLER_FAILED));
+        when(repository.fail(eq(claim), eq(RecoveryFailure.HANDLER_FAILED), any())).thenReturn(Optional.of(RejectionStatus.RUNNING));
+        assertThrows(IllegalStateException.class, engine::runOnce);
+    }
 }

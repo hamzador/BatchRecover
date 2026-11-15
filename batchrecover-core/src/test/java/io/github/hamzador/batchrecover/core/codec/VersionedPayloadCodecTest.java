@@ -26,4 +26,16 @@ class VersionedPayloadCodecTest {
         assertThrows(IllegalArgumentException.class, () ->
                 new VersionedPayloadCodec<String>("customer", 2, value -> value, Map.of(1, value -> value)));
     }
+    @Test
+    void shouldRejectNegativeDecoderVersionAndInvalidEncoderOutput() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new VersionedPayloadCodec<String>("customer", 1, v -> v, Map.of(0, v -> v, 1, v -> v)));
+        var codec = new VersionedPayloadCodec<String>("customer", 1, v -> " ", Map.of(1, v -> null));
+        assertEquals("customer", codec.typeId());
+        assertEquals(1, codec.schemaVersion());
+        assertThrows(IllegalArgumentException.class, () -> codec.encode("bad"));
+        assertThrows(NullPointerException.class, () -> codec.encode(null));
+        assertThrows(NullPointerException.class, () -> codec.decode("bad", 1));
+        assertThrows(IllegalArgumentException.class, () -> codec.decode(" ", 1));
+    }
 }

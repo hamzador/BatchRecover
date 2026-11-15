@@ -32,7 +32,7 @@ def main():
                           "org.springframework:spring-web:", "org.springframework:spring-webmvc:",
                           "org.hibernate.orm:hibernate-core:", "org.postgresql:postgresql:",
                           "com.h2database:h2:", "com.mysql:mysql-connector-j:", "com.oracle.database.jdbc:ojdbc",
-                          "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:",
+                          "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:", "org.openjdk.jmh:", "org.pitest:", "com.github.spotbugs:",
                           "org.mockito:", "org.junit.jupiter:"):
             if forbidden in tree:
                 raise ValueError(f"Unexpected runtime dependency: {forbidden}")
@@ -54,7 +54,7 @@ def main():
             raise ValueError("Missing JDBC adapter in JDBC consumer")
         for forbidden in ("org.postgresql:postgresql:", "com.mysql:mysql-connector-j:",
                           "com.oracle.database.jdbc:ojdbc", "com.h2database:h2:",
-                          "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:",
+                          "com.microsoft.sqlserver:mssql-jdbc:", "org.testcontainers:", "org.openjdk.jmh:", "org.pitest:", "com.github.spotbugs:",
                           "org.mockito:", "org.junit.jupiter:"):
             if forbidden in tree:
                 raise ValueError(f"Unexpected JDBC runtime dependency: {forbidden}")
