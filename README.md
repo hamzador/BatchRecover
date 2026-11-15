@@ -70,7 +70,11 @@ The application supplies a stable source record identity, a safe versioned paylo
 
 Build tooling uses Maven, JUnit Jupiter 6, Mockito, Testcontainers PostgreSQL and GitHub Actions. Run `./mvnw test` for unit tests or `./mvnw -B clean verify` with Docker for the full reactor and integration smoke test. See [development setup](docs/development.md).
 
-The proposed Maven namespace is `io.github.hamzador` (ownership and publication still to be verified). Apache-2.0 is a proposed license; no license has been adopted yet.
+The Maven namespace `io.github.hamzador` is verified in Central Portal. Publication has not yet been authorized.
+
+## License
+
+BatchRecover is licensed under the [Apache License, Version 2.0](LICENSE) (SPDX: `Apache-2.0`). The parent POM declares this license for all library modules. Third-party components retain their own licenses.
 
 ## References
 
@@ -78,4 +82,4 @@ The proposed Maven namespace is `io.github.hamzador` (ownership and publication 
 - [Spring Batch 6 migration guide](https://github.com/spring-projects/spring-batch/wiki/Spring-Batch-6.0-Migration-Guide)
 - [PostgreSQL row locking](https://www.postgresql.org/docs/current/sql-select.html)
 
-Contributions and design feedback are welcome once contribution terms are established.
+Design feedback is welcome; contribution procedures will be documented separately.

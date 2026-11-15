@@ -28,7 +28,13 @@
             <url>https://github.com/hamzador</url>
         </developer>
     </developers>
-    <!-- License metadata intentionally pending owner approval. Not publishable yet. -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <modules>
         <module>batchrecover-core</module>
         <module>batchrecover-storage-memory</module>
@@ -39,6 +45,8 @@
         <module>batchrecover-coverage</module>
     </modules>
     <properties>
+        <!-- Remote deployment is disabled until a separate, explicitly approved publication change. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
         <java.version>21</java.version>
         <jacoco.version>0.8.14</jacoco.version>
         <argLine></argLine>
@@ -59,8 +67,37 @@
         </dependency>
     </dependencies>
     <build>
+        <!-- All direct library modules package the same repository license in their binary JAR. -->
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>META-INF</targetPath>
+                <filtering>false</filtering>
+                <includes><include>LICENSE</include></includes>
+            </resource>
+        </resources>
         <pluginManagement>
             <plugins>
+                <!-- Prepared, not activated. No publishing extension or deploy execution. -->
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>0.12.0</version>
+                    <configuration>
+                        <publishingServerId>central</publishingServerId>
+                        <autoPublish>false</autoPublish>
+                        <skipUpload>true</skipUpload>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.2.8</version>
+                    <configuration><bestPractices>true</bestPractices></configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
