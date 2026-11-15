@@ -25,7 +25,7 @@ def main():
   </dependency></dependencies>
 </project>""")
         subprocess.run([str(ROOT / "mvnw"), "-B", "-ntp", "-f", str(pom),
-                        "org.apache.maven.plugins:maven-dependency-plugin:3.9.0:tree",
+                        "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
         print(tree)
@@ -48,7 +48,7 @@ def main():
         pom.write_text(content)
         deps.unlink()
         subprocess.run([str(ROOT / "mvnw"), "-B", "-ntp", "-f", str(pom),
-                        "org.apache.maven.plugins:maven-dependency-plugin:3.9.0:tree",
+                        "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
         if "io.github.hamzador:batchrecover-storage-jdbc:" not in tree:

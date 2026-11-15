@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/batchrecover-m2"
           echo "MAVEN_ARGS=-Dmaven.repo.local=$RUNNER_TEMP/batchrecover-m2" >> "$GITHUB_ENV"
-      - name: Resolve test images and record immutable local identities
+      - name: Build patched test images from pinned bases and record identities
         run: bash scripts/audit_test_images.sh prepare
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
@@ -42,7 +42,7 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Generate dependency SBOM
         run: >
-          ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
+          ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom
           -DincludeTestScope=true -DoutputReactorProjects=false -Dcyclonedx.skipNotDeployed=false
           -Dcyclonedx.skipAttach=true -DoutputFormat=json
       - name: Audit known dependency vulnerabilities
@@ -63,7 +63,7 @@ jobs:
       - name: Compile isolated JMH benchmarks
         run: >
           ./mvnw -B -ntp -f benchmarks/pom.xml compile
-          org.apache.maven.plugins:maven-dependency-plugin:3.9.0:build-classpath
+          org.apache.maven.plugins:maven-dependency-plugin:3.11.0:build-classpath
           -Dmdep.outputFile=target/classpath.txt -DincludeScope=runtime
       - name: JMH smoke benchmark
         run: |
@@ -84,7 +84,7 @@ jobs:
         run: bash scripts/rehearse_release.sh
       - name: Upload quality and staging artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: quality-and-local-staging
           path: |
@@ -103,7 +103,7 @@ jobs:
           if-no-files-found: warn
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-reports
           path: |

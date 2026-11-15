@@ -6,7 +6,7 @@ This sprint prepares a local candidate only. **No publication, upload, tag or Gi
 
 ```sh
 ./mvnw -B -ntp -Prelease-preparation clean install
-./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom \
+./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom \
   -DincludeTestScope=true -DoutputReactorProjects=false -Dcyclonedx.skipNotDeployed=false \
   -Dcyclonedx.skipAttach=true -DoutputFormat=json
 python3 -m unittest discover -s scripts -p 'test_*.py'
@@ -35,13 +35,14 @@ Record of the review of commit `a9f4402479aa027c21730a79df8b44702061d863`, not a
 - [ ] Owner confirms developer metadata and identity as published.
 - [x] Reviewed security boundaries, code, current tracked source/configuration, CI evidence and threat/operating limits. OSV: zero matches for 95 scanned Maven coordinates. Pattern-based secret review did not identify an actual credential in the reviewed snapshot.
 - [x] Build-chain review: Maven distribution checksum/versions, read-only Actions, no persisted checkout credentials or publishing execution, independently checked signatures and comparison against CI.
-- [ ] Complete historical secret scan (all reachable branches/tags) and verify hosted secret-scanning/security settings. Full-history Gitleaks gate added; successful run and settings review still required.
+- [x] Full reachable history Gitleaks scan: 49 commits, no leaks in both initial hardening runs. Repeat on final SHA.
+- [ ] Verify hosted secret-scanning/security settings (not accessible from CI).
 - [x] Pin the three GitHub Actions to verified full commits used by the previous successful CI.
-- [ ] Resolve or explicitly accept remaining build-chain findings from new build-repository OSV and test-image Trivy gates; review recorded image digests and mutable runner/JDK, plugin coverage limits, Javadoc assets and lack of independent attestation.
+- [ ] Resolve remaining build-chain findings from build-repository OSV and test-image Trivy gates without lowering thresholds; initial runs reported 59 OSV matches and 108 image occurrences; remediation candidate pending CI; review recorded image digests and mutable runner/JDK, plugin coverage limits, Javadoc assets and lack of independent attestation.
 - [x] Public API and supported transaction/storage contracts reviewed against source and CI; two independent consumer examples pass. First pre-1.0 release, not a promise of backwards compatibility or production support.
 - [x] Owner authorized version 0.1.0 and planned SCM tag v0.1.0; commit and all library coordinates fixed. Actual tag does not exist.
 - [x] Owner signing key configured; 21 final artifact signatures independently verified using the provided public key in an isolated keyring.
-- [ ] Independently confirm public-key discovery from a Central-supported keyserver; CI retrieval gate added, success pending. Local verification is not remote validation.
+- [x] Independent GPG key retrieval from keys.openpgp.org passed both initial hardening runs; repeat on final SHA. This is not Central remote bundle validation.
 - [x] Final corrected archive reviewed: exact six POMs, 15 JARs, 21 signatures and 84 checksums; 79 classes, 71 Java sources, 5 CI-identical Javadoc archives; no private signing key in the supplied bundle. Earlier archives superseded.
 - [ ] Owner authorizes creation of tag v0.1.0 on the audited commit, and separately authorizes Central upload/publication.
 - [ ] Central remote validation succeeds after authorized upload; release only after owner approval.
