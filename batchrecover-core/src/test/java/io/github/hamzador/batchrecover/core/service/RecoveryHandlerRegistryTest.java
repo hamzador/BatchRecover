@@ -80,4 +80,29 @@ class RecoveryHandlerRegistryTest {
         assertFalse(failure.getMessage().contains("sensitive data"));
         assertNull(failure.getCause());
     }
+    @Test
+    void shouldRejectIncompatibleTypeWithoutDecodeOrReplay() {
+        when(codec.typeId()).thenReturn("different");
+        assertEquals(RecoveryFailure.HANDLER_UNAVAILABLE,
+                assertThrows(HandlerExecutionException.class, () -> registry.execute(work)).failure());
+        verify(codec, never()).decode(anyString(), anyInt());
+        verifyNoInteractions(handler);
+    }
+
+    @Test
+    void shouldRejectNullDecodedPayloadWithoutInvokingHandler() {
+        when(codec.typeId()).thenReturn("customer");
+        when(codec.decode("{}", 2)).thenReturn(null);
+        assertEquals(RecoveryFailure.HANDLER_FAILED,
+                assertThrows(HandlerExecutionException.class, () -> registry.execute(work)).failure());
+        verifyNoInteractions(handler);
+    }
+
+    @Test
+    void shouldValidateRegistrationIdentity() {
+        for (String id : java.util.Arrays.asList(null, "", " ", "x".repeat(129))) {
+            assertThrows(IllegalArgumentException.class, () -> new RecoveryHandlerRegistry.Registration<>(id, codec, handler));
+        }
+        assertDoesNotThrow(() -> new RecoveryHandlerRegistry.Registration<>("x".repeat(128), codec, handler));
+    }
 }

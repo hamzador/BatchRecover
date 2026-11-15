@@ -121,4 +121,19 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
         assertEquals("invalid", second.findRevisions(r.id()).getFirst().payload().encoded());
         assertTrue(second.claimNext("app", LEASE).isPresent());
     }
+    @Test
+    void shouldPreserveOuterTransactionAfterDuplicateCapture() {
+        var request = request("app", "duplicate", "bad", 3);
+        new TransactionTemplate(manager).executeWithoutResult(tx -> {
+            var first = service.captureInExistingTransaction(request);
+            var duplicate = service.captureInExistingTransaction(request);
+            assertEquals(first.id(), duplicate.id());
+            service.captureInExistingTransaction(request("app", "other", "bad", 3));
+            assertEquals(2, storage.findPending("app", 10).size());
+            tx.setRollbackOnly();
+        });
+        assertTrue(storage.findPending("app", 10).isEmpty());
+        assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM br_payload_revision", Long.class));
+        assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM br_audit_event", Long.class));
+    }
 }

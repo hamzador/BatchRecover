@@ -176,4 +176,85 @@ public abstract class RecoveryStorageContract {
         assertEquals(1, calls.get());
         assertEquals(RejectionStatus.RECOVERED, service.get(r.id()).status());
     }
+    @Test
+    @org.junit.jupiter.api.Timeout(180)
+    protected void shouldDrainContendedQueueWithoutLosingOrDuplicatingRecords() throws Exception {
+        final int count = 80;
+        var expected = new java.util.HashSet<java.util.UUID>();
+        for (int i = 0; i < count; i++) expected.add(queued("load:" + i, 3).id());
+        var calls = new java.util.concurrent.ConcurrentHashMap<java.util.UUID, Integer>();
+        var completed = new AtomicInteger();
+        var start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(4);
+        try {
+            var futures = new java.util.ArrayList<java.util.concurrent.Future<?>>();
+            for (int worker = 0; worker < 4; worker++) {
+                futures.add(pool.submit(() -> {
+                    try {
+                        if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("start timeout");
+                        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120);
+                        while (completed.get() < count && System.nanoTime() < deadline) {
+                            var claim = storage.claimNext("app", LEASE);
+                            if (claim.isEmpty()) {
+                                TimeUnit.MILLISECONDS.sleep(5);
+                                continue;
+                            }
+                            boolean executed = storage.execute(claim.orElseThrow(), work -> {
+                                assertTrue(expected.contains(work.context().idempotencyKey()));
+                                assertEquals(1, calls.merge(work.context().idempotencyKey(), 1, Integer::sum));
+                            });
+                            assertTrue(executed);
+                            completed.incrementAndGet();
+                        }
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(ex);
+                    }
+                }));
+            }
+            start.countDown();
+            for (var future : futures) future.get(150, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertEquals(count, completed.get());
+        assertEquals(expected, calls.keySet());
+        assertTrue(storage.claimNext("app", LEASE).isEmpty());
+        for (var id : expected) {
+            assertEquals(RejectionStatus.RECOVERED, service.get(id).status());
+            assertEquals(1, storage.findAttempts(id).size());
+            assertEquals(List.of(AuditAction.CAPTURED, AuditAction.QUEUED, AuditAction.CLAIMED, AuditAction.RECOVERED),
+                    storage.findAuditEvents(id).stream().map(AuditEvent::action).toList());
+        }
+    }
+
+    @Test
+    protected void shouldRejectConcurrentCorrectionsWithOneWinningRevision() throws Exception {
+        var r = service.capture(request("app", "row:1", "bad", 3));
+        var start = new CountDownLatch(1);
+        var winners = new AtomicInteger();
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var tasks = new java.util.ArrayList<java.util.concurrent.Future<?>>();
+            for (String payload : List.of("one", "two")) {
+                tasks.add(pool.submit(() -> {
+                    try {
+                        if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("timeout");
+                        service.correct(r.id(), 0, new ReplayPayload("customer", 1, payload), "operator", "fix");
+                        winners.incrementAndGet();
+                    } catch (OptimisticLockException expected) {
+                        // Exactly one compare-and-set loser.
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(ex);
+                    }
+                }));
+            }
+            start.countDown();
+            for (var task : tasks) task.get(15, TimeUnit.SECONDS);
+        }
+        assertEquals(1, winners.get());
+        assertEquals(1, service.get(r.id()).version());
+        assertEquals(2, storage.findRevisions(r.id()).size());
+        assertEquals(2, storage.findAuditEvents(r.id()).size());
+    }
 }

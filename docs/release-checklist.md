@@ -36,3 +36,5 @@ CycloneDX produces a reactor dependency SBOM including test dependencies. The OS
 References: [Central requirements](https://central.sonatype.org/publish/requirements/), [Central Maven publishing plugin](https://central.sonatype.org/publish/publish-portal-maven/), [OSV batch API](https://google.github.io/osv.dev/post-v1-querybatch/), [JaCoCo report aggregation](https://www.jacoco.org/jacoco/trunk/doc/report-aggregate-mojo.html).
 
 The approved roadmap now requires the generic storage and dialect milestones, tests on each advertised backend, and quality hardening before publication. The test-only core contract JAR is not included in the local preview; review attached artifacts before actual release.
+
+Sprint 8 adds PIT, SpotBugs and isolated JMH. Complete the [quality guide](quality.md) commands, review reports and run `python3 scripts/quality_report.py --strict` successfully before publication. Do not bypass an unmet quality target or unreviewed finding.

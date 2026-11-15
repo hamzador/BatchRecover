@@ -107,4 +107,43 @@ class RejectionServiceTest {
         when(repository.findById(initial.id())).thenReturn(Optional.empty());
         assertThrows(RejectionNotFoundException.class, () -> service.get(initial.id()));
     }
+    @Test
+    void shouldRequireExistingTransactionAndPreserveCaptureAudit() {
+        when(clock.instant()).thenReturn(NOW.plusNanos(999));
+        when(repository.captureInExistingTransaction(any(), any(), any())).thenAnswer(i -> i.getArgument(0));
+        var result = service.captureInExistingTransaction(request);
+        verify(repository).captureInExistingTransaction(eq(result), revisionCaptor.capture(), auditCaptor.capture());
+        assertEquals(NOW, result.createdAt());
+        assertEquals(NOW, revisionCaptor.getValue().createdAt());
+        assertEquals(NOW, auditCaptor.getValue().createdAt());
+        verify(repository, never()).capture(any(), any(), any());
+    }
+
+    @Test
+    void shouldClampMutationTimeWhenHostClockMovesBack() {
+        when(clock.instant()).thenReturn(NOW.minusSeconds(1));
+        when(repository.findById(initial.id())).thenReturn(Optional.of(initial));
+        when(repository.save(any(), eq(0L), any(), any())).thenAnswer(i -> i.getArgument(0));
+        var queued = service.queue(initial.id(), 0, "operator", "queue");
+        assertEquals(NOW, queued.updatedAt());
+        assertEquals(NOW, queued.nextAttemptAt());
+        verify(repository).save(eq(queued), eq(0L), eq(Optional.empty()), auditCaptor.capture());
+        assertEquals(AuditAction.QUEUED, auditCaptor.getValue().action());
+        assertEquals(RejectionStatus.PENDING, auditCaptor.getValue().previousStatus());
+        assertEquals(RejectionStatus.QUEUED, auditCaptor.getValue().newStatus());
+    }
+
+    @Test
+    void shouldAuditDiscardWithoutNewPayloadRevision() {
+        when(clock.instant()).thenReturn(NOW.plusSeconds(1));
+        when(repository.findById(initial.id())).thenReturn(Optional.of(initial));
+        when(repository.save(any(), eq(0L), any(), any())).thenAnswer(i -> i.getArgument(0));
+        var discarded = service.discard(initial.id(), 0, "operator", "discard");
+        assertEquals(RejectionStatus.DISCARDED, discarded.status());
+        assertEquals(NOW.plusSeconds(1), discarded.updatedAt());
+        verify(repository).save(eq(discarded), eq(0L), eq(Optional.empty()), auditCaptor.capture());
+        assertEquals(AuditAction.DISCARDED, auditCaptor.getValue().action());
+        assertEquals("operator", auditCaptor.getValue().actor());
+        assertEquals("discard", auditCaptor.getValue().reason());
+    }
 }
