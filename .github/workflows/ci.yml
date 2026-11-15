@@ -60,7 +60,7 @@ jobs:
             '.*MemoryRecoveryBenchmark.*' -f 1 -wi 1 -i 2 -w 1s -r 1s -foe true \
             -prof gc -rf json -rff benchmarks/target/jmh.json
       - name: Quality hardening summary
-        run: python3 scripts/quality_report.py | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python3 scripts/quality_report.py --strict | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload quality and staging artifacts
         if: always()
         uses: actions/upload-artifact@v4

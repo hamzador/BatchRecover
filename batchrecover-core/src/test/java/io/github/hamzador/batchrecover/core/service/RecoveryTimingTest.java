@@ -36,6 +36,15 @@ class RecoveryTimingTest {
     }
 
     @Test
+    void shouldDoubleExactlyBeforeReachingOddNanosecondCap() {
+        var retry = new RetryPolicy(Duration.ofNanos(2_500_000), Duration.ofNanos(5_000_001));
+        assertEquals(Duration.ofNanos(2_500_000), retry.delayAfter(1));
+        assertEquals(Duration.ofNanos(5_000_000), retry.delayAfter(2));
+        assertEquals(Duration.ofNanos(5_000_001), retry.delayAfter(3));
+        assertEquals(Duration.ofNanos(5_000_001), retry.delayAfter(Integer.MAX_VALUE));
+    }
+
+    @Test
     void shouldValidateDelaysAndExactJitterBounds() {
         assertThrows(IllegalArgumentException.class, () -> new RetryPolicy(Duration.ZERO, MS));
         assertThrows(IllegalArgumentException.class, () -> new RetryPolicy(Duration.ofMillis(-1), MS));

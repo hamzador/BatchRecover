@@ -4,7 +4,7 @@
 
 The Sprint 7 verified baseline is 167 Java tests (88 unit, 79 integration); 95.1% lines, 94.8% instructions, 74.3% branches. Sprint 8 extends domain boundaries, fencing, stale claims, retry, payload validation, and shared storage contracts. Each real backend (PostgreSQL 16, MySQL 8.4, Oracle Free 23, native H2) and memory execute a bounded 80-record queue with four competing workers; each record must be invoked once, finalized once and have a complete audit trail. The tests use a bounded test-only connection pool for portable engines and retry only the same reserved token on transient SKIP LOCKED misses (no callback run). All worker threads are joined before test cleanup. Integration load tests exposed transient locks from stale candidate scans, so the repository uses native locking limits where supported; Oracle retains its portable two-phase strategy. Concurrent corrections must have exactly one version winner. The memory-only load test fills 1,000 records with all retained revisions, drains the queue and verifies no silent eviction. Portable SQL tests explicitly prove a duplicate inside an enclosing JDBC transaction does not destroy the enclosing transaction or its rollback.
 
-Run `./mvnw -B -ntp -Prelease-preparation clean install` with Docker. JaCoCo includes unit and integration coverage; the aggregate report excludes example production classes and includes their execution data. CI fails on a coverage regression below the Sprint 7 baseline (95.0% line, 94.8% instruction, 74.3% branch), missing/invalid reports or mutation execution errors. The desired release thresholds remain 95% lines/instructions, 90% branches and 85% killed mutation score. A target is not a measured result and no thresholds are lowered to claim completion. Run the strict command below before release; any unmet target is still outstanding.
+Run `./mvnw -B -ntp -Prelease-preparation clean install` with Docker. JaCoCo includes unit and integration coverage; the aggregate report excludes example production classes and includes their execution data. CI now runs the strict quality gate: at least 95% lines and instructions, 90% branches, 85% killed mutations, no SpotBugs findings and complete valid reports. The earlier non-strict regression mode remains available for local diagnosis. No thresholds are lowered or source classes excluded to reach these targets.
 
 ## Mutation testing
 
@@ -14,6 +14,18 @@ Run `./mvnw -B -ntp -Prelease-preparation clean install` with Docker. JaCoCo inc
 
 PIT 1.22.0 and JUnit-platform plugin 1.2.3 operate on all core domain classes plus RetryPolicy and RecoverySettings. Standard default mutators; no exclusion of uncovered logic to inflate results. HTML/XML reports in core target/pit-reports. Killed mutations / all generated mutations is the conservative score (timeouts are not counted as killed). Investigate survivors, uncovered and timed-out mutations rather than asserting the same implementation. This is a developer-time plugin; it is not included in published dependencies.
 
+### Sprint 8 review of the last validated baseline
+
+Both [PR CI](https://github.com/hamzador/BatchRecover/actions/runs/43696995333) and [branch CI](https://github.com/hamzador/BatchRecover/actions/runs/43696992265) passed at commit b4e9d01: 242 tests, zero failures or skips; aggregate JaCoCo 98.34% lines, 97.98% instructions, 91.10% branches; PIT 70/77 killed (90.91%), seven survived; all five SpotBugs reports had zero findings and OSV found zero advisory matches among 84 Maven coordinates.
+
+Review of the seven surviving mutations from the XML report:
+- Rejection.claim: changing the attempt budget boundary from >= to > cannot admit an exhausted QUEUED snapshot, because its constructor already rejects it. Retain the defensive check.
+- Rejection.correct, Rejection.failed and requirePending: removing the explicit transition call is equivalent with the current mandatory state checks and fixed allowed destinations. Retain the checks for clarity and defense in depth.
+- RetryPolicy.delayAfter loop boundary: evaluating the loop once more at an already reached cap returns the same cap. The odd-nanosecond half-cap comparison, however, can change a result by one nanosecond; a new exact boundary test covers this.
+- DomainChecks.text: a boundary mutation could allow a NUL at index zero. A new public-API test rejects leading NULs in identity fields and payloads.
+
+The two added tests check real observable behavior, not internal call counts. No survivor is excluded from PIT, including the equivalent defensive paths. The next CI run must independently validate these changes and the strict gate.
+
 ## Static analysis
 
 ```sh
@@ -22,7 +34,7 @@ PIT 1.22.0 and JUnit-platform plugin 1.2.3 operate on all core domain classes pl
   com.github.spotbugs:spotbugs-maven-plugin:4.9.8.1:spotbugs -Dspotbugs.xmlOutput=true
 ```
 
-Reports cover all five library modules, no broad exclusion filters. Analyzer errors/missing classes fail the report check. Findings are reported by priority in development CI and require review before publication; strict mode refuses unreviewed findings. OSV dependency audit and CycloneDX SBOM remain separate, not a complete security audit.
+Reports cover all five library modules, no broad exclusion filters. Analyzer errors/missing classes fail the report check. Findings are reported by priority; strict CI refuses unreviewed findings. OSV dependency audit and CycloneDX SBOM remain separate, not a complete security audit.
 
 ## Performance
 

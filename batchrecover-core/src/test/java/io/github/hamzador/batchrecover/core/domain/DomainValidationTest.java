@@ -24,6 +24,17 @@ class DomainValidationTest {
     }
 
     @Test
+    void shouldRejectLeadingNullCharacterInIdentityAndPayload() {
+        String invalid = String.valueOf((char) 0) + "data";
+        assertThrows(IllegalArgumentException.class,
+                () -> new RejectionIdentity(invalid, 0, "step", "row"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new RejectionIdentity("app", 0, "step", invalid));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ReplayPayload("type", 1, invalid));
+    }
+
+    @Test
     void shouldValidateCaptureAttemptBudgetBoundaries() {
         for (int budget : new int[]{1, 100}) {
             assertEquals(budget, request(budget).maxAttempts());
