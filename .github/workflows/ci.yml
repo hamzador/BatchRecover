@@ -27,15 +27,16 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/batchrecover-m2"
           echo "MAVEN_ARGS=-Dmaven.repo.local=$RUNNER_TEMP/batchrecover-m2" >> "$GITHUB_ENV"
+          echo "BATCHRECOVER_TRACE_MAVEN=1" >> "$GITHUB_ENV"
       - name: Build patched test images from pinned bases and record identities
         id: prepare-images
         run: bash scripts/audit_test_images.sh prepare
       - name: Verify reactor
-        run: ./mvnw -B -ntp -Prelease-preparation clean install
+        run: python3 scripts/run_maven_ci.py -B -ntp -Prelease-preparation clean install
       - name: Build and test independent consumer applications
         run: |
-          ./mvnw -B -ntp -f consumer-examples/memory/pom.xml clean verify
-          ./mvnw -B -ntp -f consumer-examples/jdbc/pom.xml clean verify
+          python3 scripts/run_maven_ci.py -B -ntp -f consumer-examples/memory/pom.xml clean verify
+          python3 scripts/run_maven_ci.py -B -ntp -f consumer-examples/jdbc/pom.xml clean verify
           java -jar consumer-examples/memory/target/batchrecover-memory-consumer-1.0.0-SNAPSHOT.jar
       - name: Verify standalone memory and JDBC consumer dependencies
         run: python3 scripts/check_memory_consumer.py
@@ -43,7 +44,7 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Generate dependency SBOM
         run: >
-          ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom
+          python3 scripts/run_maven_ci.py -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom
           -DincludeTestScope=true -DoutputReactorProjects=false -Dcyclonedx.skipNotDeployed=false
           -Dcyclonedx.skipAttach=true -DoutputFormat=json
       - name: Audit known dependency vulnerabilities
@@ -54,16 +55,16 @@ jobs:
         shell: bash
         run: python3 scripts/coverage_summary.py batchrecover-coverage/target/site/jacoco-aggregate/jacoco.xml | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Mutation testing (critical domain)
-        run: ./mvnw -B -ntp -pl batchrecover-core -Pmutation org.pitest:pitest-maven:mutationCoverage
+        run: python3 scripts/run_maven_ci.py -B -ntp -pl batchrecover-core -Pmutation org.pitest:pitest-maven:mutationCoverage
       - name: SpotBugs analysis (library modules)
         run: >
-          ./mvnw -B -ntp
+          python3 scripts/run_maven_ci.py -B -ntp
           -pl batchrecover-core,batchrecover-storage-memory,batchrecover-storage-jdbc,batchrecover-spring-batch,batchrecover-spring-boot-starter
-          com.github.spotbugs:spotbugs-maven-plugin:4.9.8.1:spotbugs
+          com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:spotbugs
           -Dspotbugs.xmlOutput=true
       - name: Compile isolated JMH benchmarks
         run: >
-          ./mvnw -B -ntp -f benchmarks/pom.xml compile
+          python3 scripts/run_maven_ci.py -B -ntp -f benchmarks/pom.xml compile
           org.apache.maven.plugins:maven-dependency-plugin:3.11.0:build-classpath
           -Dmdep.outputFile=target/classpath.txt -DincludeScope=runtime
       - name: JMH smoke benchmark
@@ -83,6 +84,13 @@ jobs:
         run: bash scripts/audit_test_images.sh scan
       - name: Sign and verify tested release artifacts with disposable key (no upload)
         run: bash scripts/rehearse_release.sh
+      - name: Collect filtered Maven dependency provenance
+        if: always()
+        run: |
+          mkdir -p target
+          if test -f "$RUNNER_TEMP/batchrecover-maven-provenance.jsonl"; then
+            cp "$RUNNER_TEMP/batchrecover-maven-provenance.jsonl" target/maven-provenance.jsonl
+          fi
       - name: Upload quality and staging artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -97,6 +105,7 @@ jobs:
             target/osv-report.json
             target/build-dependency-inventory.json
             target/build-osv-report.json
+            target/maven-provenance.jsonl
             target/image-audit/*.json
             target/batchrecover-local-preview.zip
             target/batchrecover-0.1.0-DO-NOT-UPLOAD.zip

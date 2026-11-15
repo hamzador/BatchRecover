@@ -1,11 +1,15 @@
 """Check actual runtime dependency resolution from an external standalone consumer POM."""
+import os
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = ET.parse(ROOT / "pom.xml").findtext("m:version", namespaces={"m": "http://maven.apache.org/POM/4.0.0"})
+MAVEN = ([sys.executable, str(ROOT / "scripts/run_maven_ci.py")]
+         if os.environ.get("BATCHRECOVER_TRACE_MAVEN") == "1" else [str(ROOT / "mvnw")])
 MODULES = ("batchrecover-core", "batchrecover-storage-memory", "batchrecover-spring-batch",
            "batchrecover-spring-boot-starter", "batchrecover-storage-jdbc")
 
@@ -24,7 +28,7 @@ def main():
     <version>{VERSION}</version>
   </dependency></dependencies>
 </project>""")
-        subprocess.run([str(ROOT / "mvnw"), "-B", "-ntp", "-f", str(pom),
+        subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
                         "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
@@ -47,7 +51,7 @@ def main():
           <version>""" + VERSION + """</version></dependency></dependencies>""")
         pom.write_text(content)
         deps.unlink()
-        subprocess.run([str(ROOT / "mvnw"), "-B", "-ntp", "-f", str(pom),
+        subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
                         "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
