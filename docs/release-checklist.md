@@ -38,3 +38,5 @@ References: [Central requirements](https://central.sonatype.org/publish/requirem
 The approved roadmap now requires the generic storage and dialect milestones, tests on each advertised backend, and quality hardening before publication. The test-only core contract JAR is not included in the local preview; review attached artifacts before actual release.
 
 Sprint 8 adds PIT, SpotBugs and isolated JMH. Complete the [quality guide](quality.md) commands, review reports and run `python3 scripts/quality_report.py --strict` successfully before publication. Do not bypass an unmet quality target or unreviewed finding.
+
+Before publication, verify both standalone consumer applications with their independent Boot parent POMs and locally installed artifacts. The [quick start](quickstart.md), [API/extension guide](api.md) and [consumer examples](../consumer-examples/README.md) must match the verified release version. Update the snapshot coordinates only when the release is authorized.

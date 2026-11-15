@@ -22,10 +22,12 @@ public class RejectionService {
         this.clock = Objects.requireNonNull(clock);
     }
 
+    /** Capture explicitly or return the existing matching rejection. */
     public Rejection capture(CaptureRequest request) {
         return capture(request, false);
     }
 
+    /** Join the existing compatible physical transaction; fail if unsupported. */
     public Rejection captureInExistingTransaction(CaptureRequest request) {
         return capture(request, true);
     }
@@ -41,11 +43,13 @@ public class RejectionService {
                 : repository.capture(rejection, original, audit);
     }
 
+    /** Load the current snapshot; missing IDs raise RejectionNotFoundException. */
     public Rejection get(UUID id) {
         return repository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new RejectionNotFoundException(id));
     }
 
+    /** Append an approved revision while PENDING, preserving the original. Use the returned version for queueing. */
     public Rejection correct(UUID id, long expectedVersion, ReplayPayload payload,
                              String actor, String reason) {
         Rejection current = loadVersion(id, expectedVersion);
@@ -59,6 +63,7 @@ public class RejectionService {
                 audit(updated, current.status(), AuditAction.CORRECTED, actor, reason));
     }
 
+    /** Queue an approved revision with a fresh version; does not execute a handler. */
     public Rejection queue(UUID id, long expectedVersion, String actor, String reason) {
         Rejection current = loadVersion(id, expectedVersion);
         Rejection updated = current.queue(mutationTime(current));
@@ -66,6 +71,7 @@ public class RejectionService {
                 audit(updated, current.status(), AuditAction.QUEUED, actor, reason));
     }
 
+    /** Discard pending or queued work without deleting its history. */
     public Rejection discard(UUID id, long expectedVersion, String actor, String reason) {
         Rejection current = loadVersion(id, expectedVersion);
         Rejection updated = current.discard(mutationTime(current));

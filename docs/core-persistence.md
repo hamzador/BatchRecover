@@ -1,4 +1,4 @@
-# M1: Core and PostgreSQL persistence
+# Core and persistence contracts
 
 The current implementation provides a framework-independent domain and local Java service.
 Capture creates an immutable original revision and one audit event in the same transaction as the rejection.
@@ -10,11 +10,11 @@ The transition graph and worker transitions are implemented; see [recovery engin
 
 ## Migration
 
-For PostgreSQL apply `db/batchrecover/V1__create_batchrecover_tables.sql` and `db/batchrecover/V2__scope_worker_indexes.sql` explicitly, using a dedicated migration history to avoid collisions with host migrations. PostgreSQL 16 is the tested target. No automatic schema initialization. A fresh database and transaction rollback are exercised by Testcontainers.
+For PostgreSQL apply `db/batchrecover/V1__create_batchrecover_tables.sql` and `db/batchrecover/V2__scope_worker_indexes.sql` explicitly, using a dedicated migration history to avoid collisions with host migrations. PostgreSQL 16 is the tested original schema. MySQL 8.4, Oracle Free 23 and H2 2.4 use generated migrations; see [SQL dialects](sql-dialects.md). No automatic schema initialization. A fresh database and transaction rollback are exercised by Testcontainers.
 
 ## Testing
 
-`./mvnw test` runs unit tests; `./mvnw -B clean verify` also runs PostgreSQL integration tests (Docker required). CI is the acceptance gate. See roadmap for remaining milestones.
+`./mvnw test` runs unit tests; `./mvnw -B clean verify` also runs JDBC integration tests on all four databases (Docker required). CI is the acceptance gate. See roadmap for remaining milestones.
 
 ## API example
 

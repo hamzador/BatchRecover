@@ -20,6 +20,7 @@ public final class BatchRecoverWorker {
         this.registries = Objects.requireNonNull(registries);
     }
 
+    /** Perform one host-owned poll and record an outcome metric when available. */
     public RecoveryResult runOnce() {
         long start = System.nanoTime();
         String outcome = "ERROR";
@@ -32,6 +33,7 @@ public final class BatchRecoverWorker {
         }
     }
 
+    /** Perform one lease maintenance poll without invoking a handler. */
     public boolean reapOnce() {
         long start = System.nanoTime();
         String outcome = "ERROR";

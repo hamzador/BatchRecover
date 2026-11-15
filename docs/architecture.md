@@ -1,12 +1,12 @@
 # Architecture and technical specification
 
-Status: implemented foundation (Sprints 0–5 merged), generic storage under review (Sprint 6). Version target: 0.1.0.
+Status: Sprints 0–8 merged, developer experience under review (Sprint 9). Version target: 0.1.0.
 
 ## 1. Goals and non-goals
 
 Capture terminal, explicitly configured processor skips in a single-process Spring Batch job; store a versioned safe payload; allow correction and targeted replay via a registered handler. Original Spring Batch job status and counts remain unchanged. Do not replay filtered items (processor returns null), transient failures that later succeed, or unskipped fatal failures. Do not dynamically load arbitrary Java types from stored JSON.
 
-MVP uses Java 21, Spring Boot 4.0.9 and Spring Batch 6.0.6. The core is independent of storage. PostgreSQL JDBC is the validated durable adapter; the new optional memory mode is volatile and nontransactional. Additional SQL dialects must pass real backend tests before being advertised. No REST exposure, dashboard, automatic listener weaving, partitioned/remote steps, read or write replay, or cross-database atomicity in the first slice. Spring Batch 5.2 support can be a separate adapter. 
+MVP uses Java 21, Spring Boot 4.0.9 and Spring Batch 6.0.6. The core is independent of storage. Memory is volatile and nontransactional. JDBC supports PostgreSQL 16, MySQL 8.4, Oracle Free 23 and native H2 2.4, verified on real engines. Other dialects need their own tests. No REST exposure, dashboard, automatic listener weaving, partitioned/remote steps, read or write replay, or cross-database atomicity in the first slice. Spring Batch 5.2 support can be a separate adapter. 
    
 ## 2. Module boundaries
 
@@ -15,7 +15,7 @@ flowchart TD
   A[Spring Batch processor skip] --> B[Opt-in capture adapter]
   B --> C[Core rejection service]
   C --> D[Storage ports in core]
-  D --> E[Optional PostgreSQL JDBC adapter]
+  D --> E[Optional JDBC adapter (4 dialects)]
   D --> M[Bounded memory adapter]
   D --> X[Custom implementation]
   F[Local Java recovery API] --> G[Recovery coordinator]
@@ -27,7 +27,7 @@ flowchart TD
 
 - batchrecover-core: domain records, state machine, ports, policies; no Spring dependency.
 - batchrecover-storage-memory: bounded single-JVM, volatile storage, no external runtime dependencies beyond core.
-- batchrecover-storage-jdbc: optional PostgreSQL repository, SQL schema, transactions and locking.
+- batchrecover-storage-jdbc: optional dialect-aware JDBC repository, offline migrations, transactions and locking.
 - batchrecover-spring-batch: opt-in SkipListener adapter and step-context mapping.
 - batchrecover-spring-boot-starter: conditional bean configuration and property validation; no job launch or schema changes by default.
 - batchrecover-examples: runnable sample with one customer import and one replay handler.
@@ -38,7 +38,7 @@ flowchart TD
 
 Register a typed SkipListener on each selected step. Capture onSkipInProcess only. Retryable errors and filtered records do not create rejection records. Resolve job instance, job execution, step execution and configured step name. The application must provide a stable source record occurrence ID within the job instance (a business key alone may collide, e.g. repeated CSV rows; include source identity and offset). No identity inferred from object hash or mutable payload.
 
-For transactional JDBC mode, persist with the same DataSource and transaction manager as the original chunk; reject unsupported configurations. Capture must participate in the chunk transaction, not REQUIRES_NEW. If the chunk rolls back, the rejection rolls back. On a later successful retry/restart, capture can occur again. Enforce uniqueness in PostgreSQL on application scope + job instance + logical step + source occurrence + phase; store execution IDs as provenance, not identity. Insert idempotently, never overwrite original data on duplicate; unexpected content mismatch must surface as an invariant failure. Fail the step if capture cannot be persisted (fail closed), rather than silently losing a skip. Verify actual callback behavior against the pinned Spring Batch version with integration tests; do not assume identical semantics across 5.x and 6.x.
+For transactional JDBC mode, persist with the same DataSource and transaction manager as the original chunk; reject unsupported configurations. Capture must participate in the chunk transaction, not REQUIRES_NEW. If the chunk rolls back, the rejection rolls back. On a later successful retry/restart, capture can occur again. Enforce uniqueness on application scope + job instance + logical step + source occurrence + phase; store execution IDs as provenance, not identity. Portable dialects use a canonical identity digest and verify the full tuple; PostgreSQL retains the original unique constraint. Insert idempotently, never overwrite original data on duplicate; unexpected content mismatch must surface as an invariant failure. Fail the step if capture cannot be persisted (fail closed), rather than silently losing a skip. Verify actual callback behavior against the pinned Spring Batch version with integration tests; do not assume identical semantics across 5.x and 6.x.
 
 Explicit memory mode captures observed skips without transaction participation. It cannot roll back with a chunk or persist beyond JVM exit. Replay only after the host verifies completed input processing. Resourceless jobs must use a unique input occurrence prefix or fresh one-shot storage. See [storage](storage.md).
 
@@ -118,7 +118,7 @@ Disabled by default; explicit step enrollment and payload allowlist, size limit 
 
 ## 9. Compatibility and decision records
 
-- ADR-001: use Spring Batch 6 / Boot 4 for a new project; 5.2 adapter later. The 5.2 OSS release line is approaching/end of maintenance per official release announcement.
+- ADR-001: use Spring Batch 6 / Boot 4 for a new project; 5.2 adapter later. Support for 5.2 is outside this verified release matrix.
 - ADR-002: capture processor skips only in the first release; prove rollback safety before adding other phases.
 - ADR-003: JDBC and PostgreSQL first, favor explicit transaction semantics over ORM abstractions.
 - ADR-004: replay handler is explicit and registered; no arbitrary job restart.

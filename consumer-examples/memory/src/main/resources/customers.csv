@@ -1,0 +1,11 @@
+row,email
+1,alice@example.org
+2,bob@example.org
+3,invalid
+4,dan@example.org
+5,eve@example.org
+6,frank@example.org
+7,grace@example.org
+8,invalid
+9,iris@example.org
+10,john@example.org

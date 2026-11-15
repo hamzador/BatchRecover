@@ -2,9 +2,9 @@
 
 **Capture. Correct. Replay.**
 
-BatchRecover is a Java library under development for durable, item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
+BatchRecover is a Java library under development for item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: pre-release development. Core, processor-skip capture, local JDBC recovery and the opt-in starter are implemented; generic bounded memory storage is under review. No published Maven artifact yet.
+> Status: pre-release development. Processor-skip capture, bounded memory, four tested SQL dialects and the opt-in starter are implemented. The quality gates are validated. No published Maven artifact yet.
 
 ## Why?
 
@@ -12,8 +12,8 @@ A batch may complete with skipped records. Restarting a failed job and recoverin
 
 ## First release (0.1.0)
 
-- Java 21, Maven multi-module, Spring Boot 4.0.9 / Spring Batch 6.0.6 and PostgreSQL 16.
-- Optional bounded in-memory storage (single JVM) or PostgreSQL / Spring JDBC; explicitly opted-in processor skips.
+- Java 21, Maven multi-module, Spring Boot 4.0.9 / Spring Batch 6.0.6.
+- Optional bounded in-memory storage (single JVM) or PostgreSQL 16, MySQL 8.4, Oracle Free 23 and native H2 2.4 via Spring JDBC; explicitly opted-in processor skips.
 - Durable rejection identity, immutable original payload, explicit correction and revision history.
 - Explicit, application-owned typed replay handlers; retry limits, lease-based claims and audit trail.
 - Local Java API only. No web stack or ORM required.
@@ -27,6 +27,8 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Core and PostgreSQL persistence](docs/core-persistence.md)
 - [Spring Batch adapter and example](docs/spring-batch-adapter.md)
 - [Recovery engine](docs/recovery-engine.md)
+- [Quick start and troubleshooting](docs/quickstart.md)
+- [Java API and extension guide](docs/api.md)
 - [Spring Boot starter and configuration](docs/starter.md)
 - [Storage architecture and capabilities](docs/storage.md)
 - [SQL dialects and migration generator](docs/sql-dialects.md)
@@ -34,9 +36,13 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Release preparation and remaining gates](docs/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 
+## Quick start (SNAPSHOT)
+
+Start with the [five-minute guide](docs/quickstart.md). Two runnable [standalone Maven consumers](consumer-examples/README.md) demonstrate the real starter with a CSV import, with or without a database. No Maven Central artifact is published yet.
+
 ## Local usage (SNAPSHOT)
 
-Install locally with `./mvnw -B clean install` (Docker required). Apply the database migrations explicitly, enable the starter and register typed handlers using the [starter guide](docs/starter.md).
+Install locally with `./mvnw -B clean install` (Docker required). For JDBC only, apply the database migrations explicitly. Enable the starter and register typed handlers using the [starter guide](docs/starter.md).
 
 ```java
 // Application-owned types, reader, processor, writer and listener bean.

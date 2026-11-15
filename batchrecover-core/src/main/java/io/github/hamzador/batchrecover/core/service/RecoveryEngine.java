@@ -21,6 +21,7 @@ public final class RecoveryEngine {
         this.settings = Objects.requireNonNull(settings);
     }
 
+    /** Reap at most one expired claim and process at most one eligible record outside an ambient transaction. NO_WORK is not proof that delayed or contended work is absent. */
     public RecoveryResult runOnce() {
         reapOnce();
         var claim = repository.claimNext(settings.applicationScope(), settings.leaseDuration());
@@ -28,6 +29,7 @@ public final class RecoveryEngine {
         return execute(claim.orElseThrow());
     }
 
+    /** Reap one expired claim without executing a handler; host owns scheduling. */
     public boolean reapOnce() {
         return repository.reapExpired(settings.applicationScope(), this::jitteredDelay);
     }

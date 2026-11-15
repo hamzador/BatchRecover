@@ -2,7 +2,7 @@
 
 BatchRecover Core remains Java-only. The existing RejectionRepository and RecoveryRepository ports stay in core; RecoveryStorage combines both and declares capabilities. No separate SPI module, ORM or compulsory JDBC driver. The starter includes the tiny memory adapter; JDBC must be added explicitly as a dependency. The Spring Batch adapter continues to depend on the existing ports, not storage implementations.
 
-| Guarantee | Memory | PostgreSQL JDBC |
+| Guarantee | Memory | JDBC (same physical transaction) |
 | --- | --- | --- |
 | Retention after JVM exit | No | Yes |
 | Multiple threads per storage | Yes | Yes |
@@ -34,11 +34,11 @@ List pending rejects using RecoveryStorage.findPending(scope, limit) (1–1000).
 
 ## JDBC and custom storage
 
-For existing JDBC users, enabled=true without storage.type still selects JDBC; add the batchrecover-storage-jdbc artifact explicitly. Set storage.type=jdbc for new apps. Missing classes or missing/ambiguous transaction manager fail startup rather than falling back to memory. Existing V1 and V2 migrations and JDBC guarantees are unchanged. Sprint 7 adds dialect selection and offline migrations targeting PostgreSQL, MySQL, Oracle and H2; support is contingent on the real-engine CI. See [SQL dialects](sql-dialects.md). Do not mix backing stores for capture and recovery.
+For existing JDBC users, enabled=true without storage.type still selects JDBC; add the batchrecover-storage-jdbc artifact explicitly. Set storage.type=jdbc for new apps. Missing classes or missing/ambiguous transaction manager fail startup rather than falling back to memory. Existing V1 and V2 migrations and JDBC guarantees are unchanged. Sprint 7 validated PostgreSQL 16, MySQL 8.4, Oracle Free 23 and native H2 2.4 through real-engine CI. See [SQL dialects](sql-dialects.md). Do not mix backing stores for capture and recovery.
 
 Custom providers can implement RecoveryStorage or supply both existing ports as beans and set storage.type=custom. Custom capture is transactional by default (mandatory capture must be implemented); direct Java users may explicitly choose nontransactional CaptureSettings only if they accept the implications. No automatic schema creation, no automatic scheduler.
 
-The shared JUnit contract lives under core test sources, packaged as a test-scoped test JAR. Both memory and real PostgreSQL run it. Backend-specific tests verify JDBC rollback and memory bounds. No testing dependency is in the production library.
+The shared JUnit contract lives under core test sources, packaged as a test-scoped test JAR. Memory and all four validated JDBC engines run it. H2 embedded mode is not multi-JVM storage. Backend-specific tests verify JDBC rollback and memory bounds. No testing dependency is in the production library.
 
 The library exposes no REST, web server or UI. File/NoSQL providers are deferred until demand warrants maintenance.
 

@@ -20,6 +20,12 @@ public final class BatchRecoverListenerFactory {
         this.properties = Objects.requireNonNull(properties);
     }
 
+    /**
+     * Build a listener for an explicitly enrolled step. Use the same handler ID and codec
+     * in the registered handler. This method does not attach the listener.
+     * @param <I> input type
+     * @param <O> output type
+     */
     public <I,O> RecoverableSkipListener<I,O> create(String handlerId, RecordIdentity<I> identity,
                                                     PayloadCodec<I> codec, ErrorClassifier classifier) {
         return new RecoverableSkipListener<>(service, resolver, identity, codec, classifier,
