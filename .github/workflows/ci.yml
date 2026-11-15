@@ -28,6 +28,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/batchrecover-m2"
           echo "MAVEN_ARGS=-Dmaven.repo.local=$RUNNER_TEMP/batchrecover-m2" >> "$GITHUB_ENV"
       - name: Build patched test images from pinned bases and record identities
+        id: prepare-images
         run: bash scripts/audit_test_images.sh prepare
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
@@ -78,7 +79,7 @@ jobs:
           python3 scripts/audit_build_repository.py "$RUNNER_TEMP/batchrecover-m2" --output target/build-dependency-inventory.json
           python3 scripts/audit_dependencies.py target/build-dependency-inventory.json --output target/build-osv-report.json
       - name: Scan integration test images for HIGH and CRITICAL vulnerabilities
-        if: success() || failure()
+        if: ${{ !cancelled() && steps.prepare-images.outcome == 'success' }}
         run: bash scripts/audit_test_images.sh scan
       - name: Sign and verify tested release artifacts with disposable key (no upload)
         run: bash scripts/rehearse_release.sh
