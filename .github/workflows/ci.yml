@@ -12,17 +12,23 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
       - name: Set up Java 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
+      - name: Isolate Maven repository for build dependency inventory
+        run: |
+          mkdir -p "$RUNNER_TEMP/batchrecover-m2"
+          echo "MAVEN_ARGS=-Dmaven.repo.local=$RUNNER_TEMP/batchrecover-m2" >> "$GITHUB_ENV"
+      - name: Resolve test images and record immutable local identities
+        run: bash scripts/audit_test_images.sh prepare
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
       - name: Build and test independent consumer applications
@@ -67,11 +73,18 @@ jobs:
       - name: Quality hardening summary
         shell: bash
         run: python3 scripts/quality_report.py --strict | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Audit resolved build and plugin dependency coordinates
+        run: |
+          python3 scripts/audit_build_repository.py "$RUNNER_TEMP/batchrecover-m2" --output target/build-dependency-inventory.json
+          python3 scripts/audit_dependencies.py target/build-dependency-inventory.json --output target/build-osv-report.json
+      - name: Scan integration test images for HIGH and CRITICAL vulnerabilities
+        if: success() || failure()
+        run: bash scripts/audit_test_images.sh scan
       - name: Sign and verify tested release artifacts with disposable key (no upload)
         run: bash scripts/rehearse_release.sh
       - name: Upload quality and staging artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: quality-and-local-staging
           path: |
@@ -81,16 +94,34 @@ jobs:
             benchmarks/target/jmh.json
             target/bom.json
             target/osv-report.json
+            target/build-dependency-inventory.json
+            target/build-osv-report.json
+            target/image-audit/*.json
             target/batchrecover-local-preview.zip
             target/batchrecover-0.1.0-DO-NOT-UPLOAD.zip
             target/rehearsal-public-key.asc
           if-no-files-found: warn
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-reports
           path: |
             **/target/surefire-reports/*.xml
             **/target/failsafe-reports/*.xml
           if-no-files-found: warn
+
+  security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout all reachable branches and tags
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan Git history with checksum-pinned Gitleaks
+        run: bash scripts/audit_git_history.sh
+      - name: Confirm owner public key on Central-supported keyserver
+        if: success() || failure()
+        run: bash scripts/verify_release_public_key.sh
