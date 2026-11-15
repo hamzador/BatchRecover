@@ -21,11 +21,16 @@ for pom in root.rglob("pom.xml"):
 PY
 # The normal reactor and strict quality gate have already run on this exact source.
 # Rebuild actual non-SNAPSHOT artifacts instead of renaming snapshot JARs.
-# Use install only, never deploy; the runner's local Maven cache is not a remote repository.
+# Isolate the candidate repo from the ordinary Maven cache: never persist unofficial 0.1.0 artifacts.
+mkdir "$work/m2"
+if [ -d "$HOME/.m2/repository" ]; then
+  cp -a --reflink=auto "$HOME/.m2/repository/." "$work/m2/"
+fi
+rm -rf "$work/m2/io/github/hamzador"
 cd "$work/checkout"
-./mvnw -B -ntp -Prelease-preparation -DskipTests clean install
-./mvnw -B -ntp -f consumer-examples/memory/pom.xml clean verify
-./mvnw -B -ntp -f consumer-examples/jdbc/pom.xml clean verify
+./mvnw -B -ntp "-Dmaven.repo.local=$work/m2" -Prelease-preparation -DskipTests clean install
+./mvnw -B -ntp "-Dmaven.repo.local=$work/m2" -f consumer-examples/memory/pom.xml clean verify
+./mvnw -B -ntp "-Dmaven.repo.local=$work/m2" -f consumer-examples/jdbc/pom.xml clean verify
 gpg --homedir "$work/gpg" --batch --pinentry-mode loopback --passphrase '' \
   --quick-generate-key "BatchRecover CI rehearsal (NOT FOR UPLOAD) <ci-rehearsal@example.invalid>" rsa3072 sign 1d
 fingerprint="$(gpg --homedir "$work/gpg" --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" && !seen++ {print $10}')"
