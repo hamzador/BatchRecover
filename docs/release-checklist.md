@@ -25,16 +25,27 @@ CycloneDX produces a reactor dependency SBOM including test dependencies. The OS
 
 ## Owner decisions and prepublication gates
 
-- [x] Owner approved Apache-2.0 (2026-11-15); full [LICENSE](../LICENSE), inherited POM license metadata and binary JAR license resources added.
-- [ ] Review third-party license obligations and existing attribution notices before publication.
-- [x] Namespace io.github.hamzador is listed as Verified in the owner's Central Portal (owner-provided screenshot, 2026-11-15). This is not an authenticated API validation or upload authorization.
-- [ ] Confirm developer metadata and identity; do not invent contact details.
-- [ ] Review the security report and threat model; resolve applicable advisories and document any risk acceptance. Perform a source code/secret and build-supply-chain review.
-- [ ] Review public API compatibility, transaction conditions, integration guide and example on an independent application.
-- [x] Owner authorized version 0.1.0 and planned SCM tag v0.1.0; reactor, benchmarks and consumer library versions updated. The actual Git tag is not created.
-- [x] Owner signing key configured and public key retrieved; earlier candidate signed and validated locally.
-- [ ] Rebuild and verify the signed bundle from the final approved commit (previous signed ZIP is superseded). No private keys or tokens in Git.
-- [ ] After owner approval, produce the final release bundle with approved metadata, verify its signatures against the owner's public key, review the exact allowlist, and obtain separate explicit approval before upload. The offline rehearsal avoids invoking the publishing plugin or deploy at all.
+Record of the review of commit `a9f4402479aa027c21730a79df8b44702061d863`, not approval to publish. The evidence is in [the prepublication report](release-review-0.1.0.md).
+
+- [x] Owner approved Apache-2.0 (2026-11-15); full license, POM metadata and library license resources verified.
+- [x] Technical third-party inventory: 95 external Maven coordinates with declared licenses; no third-party Java classes bundled; 25 complete Javadoc legal files across five JARs. Attribution review is not a legal opinion.
+- [ ] Owner confirms rights to contribute and redistribute the code and all applicable third-party obligations.
+- [x] Namespace io.github.hamzador shown Verified in owner-provided Central Portal screenshot (2026-11-15); no authenticated portal verification.
+- [x] Maven metadata reviewed: developer id/name hamzador and public GitHub profile, SCM connection and planned tag v0.1.0; no invented personal contact details.
+- [ ] Owner confirms developer metadata and identity as published.
+- [x] Reviewed security boundaries, code, current tracked source/configuration, CI evidence and threat/operating limits. OSV: zero matches for 95 scanned Maven coordinates. Pattern-based secret review did not identify an actual credential in the reviewed snapshot.
+- [x] Build-chain review: Maven distribution checksum/versions, read-only Actions, no persisted checkout credentials or publishing execution, independently checked signatures and comparison against CI.
+- [ ] Complete historical secret scan (all reachable branches/tags) and verify hosted secret-scanning/security settings.
+- [ ] Resolve or explicitly accept residual build-chain risks: mutable action/image tags and runner, unscanned build/plugin/container dependencies, no independent build attestation, no exhaustive security scan of generated Javadoc assets.
+- [x] Public API and supported transaction/storage contracts reviewed against source and CI; two independent consumer examples pass. First pre-1.0 release, not a promise of backwards compatibility or production support.
+- [x] Owner authorized version 0.1.0 and planned SCM tag v0.1.0; commit and all library coordinates fixed. Actual tag does not exist.
+- [x] Owner signing key configured; 21 final artifact signatures independently verified using the provided public key in an isolated keyring.
+- [ ] Independently confirm public-key discovery from a Central-supported keyserver; local verification is not remote validation.
+- [x] Final corrected archive reviewed: exact six POMs, 15 JARs, 21 signatures and 84 checksums; 79 classes, 71 Java sources, 5 CI-identical Javadoc archives; no private signing key in the supplied bundle. Earlier archives superseded.
+- [ ] Owner authorizes creation of tag v0.1.0 on the audited commit, and separately authorizes Central upload/publication.
+- [ ] Central remote validation succeeds after authorized upload; release only after owner approval.
+
+**Decision: technical candidate passes the reviewed offline controls; NO-GO for immediate public release until the outstanding gates are resolved.** Do not tag, deploy, upload, or publish based on this document alone.
 
 References: [Central requirements](https://central.sonatype.org/publish/requirements/), [Central Maven publishing plugin](https://central.sonatype.org/publish/publish-portal-maven/), [OSV batch API](https://google.github.io/osv.dev/post-v1-querybatch/), [JaCoCo report aggregation](https://www.jacoco.org/jacoco/trunk/doc/report-aggregate-mojo.html).
 
