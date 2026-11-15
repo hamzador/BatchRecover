@@ -2,9 +2,9 @@
 
 **Capture. Correct. Replay.**
 
-BatchRecover is a Java library under development for item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
+BatchRecover is a Java library for item-level recovery of rejected Spring Batch records. It complements Spring Batch rather than replacing its retry, skip, or job restart mechanisms.
 
-> Status: pre-release development. Processor-skip capture, bounded memory, four tested SQL dialects and the opt-in starter are implemented. The quality gates are validated. No published Maven artifact yet.
+> Status: version 0.1.0 prepared for release (not yet published). Processor-skip capture, bounded memory, four tested SQL dialects and the opt-in starter are implemented. The quality gates are validated. No published Maven artifact yet.
 
 ## Why?
 
@@ -36,13 +36,13 @@ Read and write skips, distributed steps, cross-database transactions, external s
 - [Release preparation and remaining gates](docs/release-checklist.md)
 - [Changelog](CHANGELOG.md)
 
-## Quick start (SNAPSHOT)
+## Quick start (0.1.0)
 
-Start with the [five-minute guide](docs/quickstart.md). Two runnable [standalone Maven consumers](consumer-examples/README.md) demonstrate the real starter with a CSV import, with or without a database. No Maven Central artifact is published yet.
+Start with the [five-minute guide](docs/quickstart.md). Two runnable [standalone Maven consumers](consumer-examples/README.md) demonstrate the real starter with a CSV import, with or without a database. No Maven Central artifact is published yet. See [release notes](docs/release-notes-0.1.0.md) and [Windows signing guide](docs/release-windows.md).
 
-## Local usage (SNAPSHOT)
+## Local usage (0.1.0)
 
-Install locally with `./mvnw -B clean install` (Docker required). For JDBC only, apply the database migrations explicitly. Enable the starter and register typed handlers using the [starter guide](docs/starter.md).
+Install from the release checkout with `./mvnw -B -Prelease-preparation clean install` (Docker required); the coordinates are not yet available from Maven Central. For JDBC only, apply the database migrations explicitly. Enable the starter and register typed handlers using the [starter guide](docs/starter.md).
 
 ```java
 // Application-owned types, reader, processor, writer and listener bean.

@@ -1,6 +1,6 @@
 # Contributing
 
-BatchRecover is in pre-alpha; licensing is pending the repository owner's decision. Please open an issue to discuss proposed changes before submitting a patch.
+BatchRecover 0.1.0 is prepared but not yet published; contributions are subject to the repository's Apache-2.0 license. Please open an issue to discuss proposed changes before submitting a patch.
 
 ## Build
 

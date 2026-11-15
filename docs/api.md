@@ -1,6 +1,6 @@
 # Java API and extension guide
 
-Public entry points, all pre-1.0 and subject to documented changes before release:
+Public entry points for 0.1.0, all pre-1.0 and subject to documented changes:
 
 | API | Purpose |
 | --- | --- |

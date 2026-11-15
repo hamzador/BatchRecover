@@ -43,7 +43,7 @@ def entries(root):
     """Use only six POMs and fifteen distribution JARs, never the contract test JAR."""
     parent = ET.parse(root / "pom.xml").getroot()
     if parent.findtext("m:version", namespaces=NS) != VERSION:
-        raise ValueError("Build a separate non-SNAPSHOT rehearsal checkout first")
+        raise ValueError("Build the non-SNAPSHOT release checkout first")
     if parent.findtext("m:groupId", namespaces=NS) != GROUP.replace("/", "."):
         raise ValueError("Unexpected namespace")
     if parent.findtext("m:artifactId", namespaces=NS) != "batchrecover-parent":
@@ -51,6 +51,13 @@ def entries(root):
     for name in ("name", "description", "url", "scm/url", "developers/developer/id"):
         if not parent.findtext("/".join("m:" + part for part in name.split("/")), namespaces=NS):
             raise ValueError("Missing parent metadata: " + name)
+    if parent.findtext("m:scm/m:tag", namespaces=NS) != "v" + VERSION:
+        raise ValueError("Unexpected release SCM tag metadata")
+    for field in ("connection", "developerConnection", "url"):
+        if not parent.findtext("m:scm/m:" + field, namespaces=NS):
+            raise ValueError("Missing SCM field: " + field)
+    if not parent.findtext("m:developers/m:developer/m:name", namespaces=NS):
+        raise ValueError("Missing developer display name")
     license_text = validate_license(root)
     result = {}
     for module in ("batchrecover-parent", *MODULES):
@@ -133,7 +140,7 @@ def sign_bundle(root, output, home, fingerprint):
                         raise ValueError("Checksum mismatch: " + name)
         candidate.rename(output)
     print(f"Local signed rehearsal: {len(files)} artifacts, {len(files)} verified signatures, {len(files)*len(HASHES)} checksums")
-    print("NOT FOR UPLOAD: official owner signing and publication approval are pending.")
+    print("NOT FOR UPLOAD UNTIL APPROVED: verify commit, owner key and publication approval separately.")
 
 
 def main():

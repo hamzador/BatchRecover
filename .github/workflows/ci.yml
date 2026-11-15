@@ -2,7 +2,7 @@ name: Build and test
 
 on:
   push:
-    branches: [main, 'feature/**']
+    branches: [main, 'feature/**', 'chore/**']
   pull_request:
     branches: [main]
 
@@ -23,7 +23,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
       - name: Build and test independent consumer applications
@@ -68,7 +67,7 @@ jobs:
       - name: Quality hardening summary
         shell: bash
         run: python3 scripts/quality_report.py --strict | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Sign and verify disposable non-SNAPSHOT release rehearsal (no upload)
+      - name: Sign and verify tested release artifacts with disposable key (no upload)
         run: bash scripts/rehearse_release.sh
       - name: Upload quality and staging artifacts
         if: always()

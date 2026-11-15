@@ -1,12 +1,12 @@
-# Spring Boot starter (0.1.0 target)
+# Spring Boot starter (0.1.0)
 
-Tested target: Java 21, Spring Boot 4.0.9, Spring Batch 6.0.6; bounded memory and PostgreSQL 16, MySQL 8.4, Oracle Free 23, native H2 2.4 are tested. Other versions and distributed processing are not certified. Install the SNAPSHOT locally with `./mvnw -B clean install` (Docker required for integration tests); there is no published BatchRecover artifact yet.
+Tested target: Java 21, Spring Boot 4.0.9, Spring Batch 6.0.6; bounded memory and PostgreSQL 16, MySQL 8.4, Oracle Free 23, native H2 2.4 are tested. Other versions and distributed processing are not certified. Install version 0.1.0 locally with `./mvnw -B clean install` (Docker required for integration tests); there is no published BatchRecover artifact yet.
 
 ```xml
 <dependency>
     <groupId>io.github.hamzador</groupId>
     <artifactId>batchrecover-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 

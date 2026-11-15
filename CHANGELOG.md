@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 0.1.0 target
+## 0.1.0 — prepared, not yet published
 
 - Capture sequential Spring Batch 6 processor skips in the original JDBC chunk transaction.
 - Store immutable original payload and correction history, versioned rejection state and audit events in memory or durable JDBC storage, according to the selected provider.
@@ -13,6 +13,6 @@
 - Independent Spring Boot consumers importing CSV with and without a database, quick start and API guides.
 - Offline non-SNAPSHOT build and signing rehearsal; malformed Unicode metadata rejected consistently with payload validation.
 
-See [draft 0.1.0 release notes](docs/release-notes-0.1.0.md).
+See [0.1.0 release notes](docs/release-notes-0.1.0.md).
 
 Not published. Read/write skips, external effects, remote/partitioned steps and older Spring Batch compatibility are outside this release.
