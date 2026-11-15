@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.hamzador</groupId>
         <artifactId>batchrecover-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>batchrecover-spring-batch</artifactId>

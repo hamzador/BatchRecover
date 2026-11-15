@@ -21,7 +21,7 @@ The schema generator returns ordered immutable V1/V2 scripts. PostgreSQL retains
 
 ```sh
 ./mvnw -B -pl batchrecover-storage-jdbc -am package
-java -cp batchrecover-storage-jdbc/target/batchrecover-storage-jdbc-0.1.0-SNAPSHOT.jar \
+java -cp batchrecover-storage-jdbc/target/batchrecover-storage-jdbc-0.1.0.jar \
   io.github.hamzador.batchrecover.storage.jdbc.schema.SchemaCli mysql ./generated/mysql
 ```
 

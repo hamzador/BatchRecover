@@ -1,6 +1,6 @@
 # Architecture and technical specification
 
-Status: Sprints 0–8 merged, developer experience under review (Sprint 9). Version target: 0.1.0.
+Status: Sprints 0–10 merged through PR #14; final 0.1.0 metadata under validation, not published.
 
 ## 1. Goals and non-goals
 

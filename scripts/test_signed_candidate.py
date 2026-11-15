@@ -17,8 +17,11 @@ class SignedCandidateTest(unittest.TestCase):
             '<project xmlns="http://maven.apache.org/POM/4.0.0">'
             '<groupId>io.github.hamzador</groupId><artifactId>batchrecover-parent</artifactId>'
             f'<version>{VERSION}</version><name>BatchRecover</name><description>test</description>'
-            '<url>https://example.invalid</url><scm><url>https://example.invalid</url></scm>'
-            '<developers><developer><id>owner</id></developer></developers>'
+            '<url>https://example.invalid</url><scm><url>https://example.invalid</url>'
+            '<connection>scm:git:https://example.invalid</connection>'
+            '<developerConnection>scm:git:ssh://example.invalid</developerConnection>'
+            f'<tag>v{VERSION}</tag></scm>'
+            '<developers><developer><id>owner</id><name>owner</name></developer></developers>'
             '<licenses><license><name>Apache License, Version 2.0</name>'
             '<url>https://www.apache.org/licenses/LICENSE-2.0</url><distribution>repo</distribution>'
             '</license></licenses></project>')
@@ -56,6 +59,18 @@ class SignedCandidateTest(unittest.TestCase):
                     archive.writestr("META-INF/LICENSE", replacement)
             with self.assertRaisesRegex(ValueError, "license in binary JAR"):
                 entries(self.root)
+
+    def test_rejects_unfinalized_scm_tag(self):
+        pom = self.root / "pom.xml"
+        pom.write_text(pom.read_text().replace(f"<tag>v{VERSION}</tag>", "<tag>HEAD</tag>"))
+        with self.assertRaisesRegex(ValueError, "SCM tag metadata"):
+            entries(self.root)
+
+    def test_rejects_missing_developer_display_name(self):
+        pom = self.root / "pom.xml"
+        pom.write_text(pom.read_text().replace("<name>owner</name>", ""))
+        with self.assertRaisesRegex(ValueError, "developer display name"):
+            entries(self.root)
 
     def test_rejects_snapshot_parent(self):
         pom = self.root / "pom.xml"

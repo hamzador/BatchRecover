@@ -1,10 +1,11 @@
 """Check actual runtime dependency resolution from an external standalone consumer POM."""
 import subprocess
 import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-SNAPSHOT"
+VERSION = ET.parse(ROOT / "pom.xml").findtext("m:version", namespaces={"m": "http://maven.apache.org/POM/4.0.0"})
 MODULES = ("batchrecover-core", "batchrecover-storage-memory", "batchrecover-spring-batch",
            "batchrecover-spring-boot-starter", "batchrecover-storage-jdbc")
 

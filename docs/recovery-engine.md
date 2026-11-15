@@ -17,12 +17,12 @@ RecoveryResult result = engine.runOnce();
 
 ## Transactions and fencing
 
-1. Claim: scoped QUEUED scan using PostgreSQL FOR UPDATE SKIP LOCKED, ordered by due timestamp and UUID; allocate a random lease token and increment attempt count; insert a RUNNING attempt and audit; commit.
+1. Claim: scoped QUEUED scan using dialect-specific FOR UPDATE SKIP LOCKED, ordered by due timestamp and UUID; allocate a random lease token and increment attempt count; insert a RUNNING attempt and audit; commit.
 2. Execute: lock the exact rejection with the claim token, scope, attempt and revision; check lease against database clock. Load the pinned payload revision. Decode, validate and replay synchronously in the same JDBC transaction, including success status, attempt finalization and audit. The lock excludes the reaper until execution commits or rolls back.
 3. On a handler exception, execution rolls back; a new transaction finalizes the failure if the token still matches. Validation failures return to PENDING until budget is exhausted; other failures schedule a retry. On an infrastructure error or crash, the reaper recovers the expired claim once the lock is released. An expired or stale token cannot initiate another execution; finalization within an already locked execution may complete after the lease deadline.
 4. Reaper: scoped expired RUNNING scan with SKIP LOCKED; finalize attempt and switch to QUEUED or DEAD. The original allocated attempt consumes budget. No resetting attempts on correction. Attempts are append-on-claim, finalized once; original revisions and audit are never overwritten.
 
-The database clock governs due and expiration decisions; synchronize host clocks for capture/queue timestamps. Worker transaction timeout is 30 seconds, PostgreSQL statement timeout 30 seconds, lock timeout 5 seconds during callback. These do not forcibly interrupt arbitrary handler CPU or blocking I/O. Use short, bounded synchronous handlers, a correctly configured JDBC driver/connection timeouts and operational monitoring. A hung session holding a row lock cannot be reclaimed until PostgreSQL releases it.
+The database clock governs due and expiration decisions; synchronize host clocks for capture/queue timestamps. Worker transaction timeout is 30 seconds, PostgreSQL statement timeout 30 seconds, lock timeout 5 seconds during callback. These do not forcibly interrupt arbitrary handler CPU or blocking I/O. Use short, bounded synchronous handlers, a correctly configured JDBC driver/connection timeouts and operational monitoring. A hung session holding a row lock cannot be reclaimed until the database releases it.
 
 ## Retry
 

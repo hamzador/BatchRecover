@@ -10,7 +10,7 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 | 7 | Extensible JDBC dialects and schema generation | Merged; 167 tests, all four engines validated |
 | 8 | Quality, mutation tests, performance and dependency footprint | Merged; 244 tests, 98.34% lines, 91.10% branches, 93.51% PIT |
 | 9 | Developer experience and examples | Merged; 246 tests, 98.43% lines, 91.25% branches, 93.51% PIT |
-| 10 | Release 0.1.0 after owner approval | Local signed rehearsal under review; Apache-2.0 approved and namespace verified; official signature and publication pending |
+| 10 | Release 0.1.0 after owner approval | PR #14 merged; non-SNAPSHOT release metadata under final validation. Owner-signed rehearsal completed; final bundle, tag and publication pending |
 
 ## Sprint 6 — Generic storage
 - Core ports and capabilities, bounded memory, explicitly selected JDBC or memory or custom.
@@ -33,7 +33,7 @@ See [quality guide](quality.md) for the actual report commands, regression basel
 Document public API/Javadoc, runnable independent CSV consumers for memory and PostgreSQL, quick start, migration and custom extension guide. Explicit listener registration and host-owned worker scheduling remain. Validate independent application integrations.
 
 ## Sprint 10 — Release
-CI green, quality gates met, review applicable vulnerabilities and licenses, validate namespace and signed local Central bundle. The owner has approved Apache-2.0; publication approval remains separate. Keep 0.1.0-SNAPSHOT until release approval; no Maven Central upload.
+CI green, quality gates met, review applicable vulnerabilities and licenses, validate namespace and signed local Central bundle. The owner has approved Apache-2.0; publication approval remains separate. Version 0.1.0 and planned SCM tag v0.1.0 are prepared by owner instruction. Creating the tag or uploading any bundle requires separate authorization.
 
 ## Later versions
 0.2.0: additional tested SQL dialects and read/write skip support subject to Spring Batch transaction testing. 0.3.0+: optional file/NoSQL or compatibility extensions only by demonstrated demand. External effects require separate outbox/idempotency design. 1.0.0: stabilized contracts and production feedback. Web/admin UI is not in the library roadmap.

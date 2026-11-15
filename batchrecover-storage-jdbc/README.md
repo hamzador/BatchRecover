@@ -8,7 +8,7 @@ var repository = new JdbcRejectionRepository(dataSource, transactionManager);
 var service = new RejectionService(repository, Clock.systemUTC());
 ```
 
-Use the same DataSource instance and JDBC transaction manager as the enclosing chunk. Repository transactions use REQUIRED propagation and assume PostgreSQL READ COMMITTED for duplicate capture. Retry serialization errors at the outer transaction boundary. The Spring Batch processor-skip adapter defaults to mandatory transactional capture.
+Use the same DataSource instance and JDBC transaction manager as the enclosing chunk. Repository transactions use REQUIRED propagation and assume READ COMMITTED for duplicate capture. Retry serialization errors at the outer transaction boundary. The Spring Batch processor-skip adapter defaults to mandatory transactional capture.
 
 The stored payload must already be approved by the host application. Encoded text is stored unchanged (maximum 64 KiB UTF-8); duplicate detection compares the exact original encoding, schema version, type and handler, not corrected content or execution IDs. Use deterministic codecs. The host owns authorization, encryption/retention and semantic validation; no automatic secret detection is provided.
 

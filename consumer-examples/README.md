@@ -1,8 +1,8 @@
 # Standalone Spring Boot consumers
 
-These two applications are **outside the library Maven reactor**, have their own Spring Boot 4.0.9 parent, and resolve BatchRecover through installed artifacts. They use real Boot auto-configuration discovery, explicit listener registration, a real Spring Batch job and a typed recovery handler. Neither is a release artifact.
+These two applications are **outside the library Maven reactor**, have their own Spring Boot 4.0.9 parent, and resolve BatchRecover through installed artifacts. They use real Boot auto-configuration discovery, explicit listener registration, a real Spring Batch job and a typed recovery handler. Neither is a release artifact. The demo applications retain their own 1.0.0-SNAPSHOT versions.
 
-From the repository root, install the unpublished candidate first (Java 21, Maven wrapper, Docker for JDBC integration):
+From the 0.1.0 repository checkout, install the unpublished library first (Java 21, Maven wrapper, Docker for JDBC integration):
 ```sh
 ./mvnw -B -ntp -Prelease-preparation clean install
 ```

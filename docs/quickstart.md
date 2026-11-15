@@ -4,7 +4,7 @@ BatchRecover captures terminal processor skips explicitly enrolled in a sequenti
 
 ## 1. Choose storage
 
-Install locally first: `./mvnw -B -ntp -Prelease-preparation clean install` (Java 21; Docker for integration tests). For a one-shot run without Docker, `./mvnw -B -ntp -DskipTests install` installs unverified local artifacts; run the full suite before release.
+The 0.1.0 artifacts are not yet published. Install locally from the release checkout first: `./mvnw -B -ntp -Prelease-preparation clean install` (Java 21; Docker for integration tests). For a one-shot run without Docker, `./mvnw -B -ntp -DskipTests install` installs unverified local artifacts; run the full suite before release.
 
 Add the starter:
 
@@ -12,7 +12,7 @@ Add the starter:
 <dependency>
     <groupId>io.github.hamzador</groupId>
     <artifactId>batchrecover-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 

@@ -5,7 +5,7 @@ Standalone Java application with Spring Batch 6 and PostgreSQL. It generates 100
 Use an **empty disposable PostgreSQL database** only; the sample does not support repeat runs of the same synthetic primary keys without resetting the demo database. Set DEMO_JDBC_URL, DEMO_DB_USER and DEMO_DB_PASSWORD via your shell environment (do not commit real credentials). Build with `./mvnw -pl batchrecover-examples -am package`. From repository root:
 
 ```sh
-java -jar batchrecover-examples/target/batchrecover-examples-0.1.0-SNAPSHOT.jar --init
+java -jar batchrecover-examples/target/batchrecover-examples-0.1.0.jar --init
 ```
 
 The explicit --init flag applies the Spring Batch metadata schema, BatchRecover V1 schema and demo table. Omit it only if those schemas already exist and the example table is empty. Expected: status=COMPLETED read=100 written=90 processSkipped=10.

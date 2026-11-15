@@ -1,8 +1,8 @@
-# BatchRecover 0.1.0 — draft release notes (not yet released)
+# BatchRecover 0.1.0 — release notes (not yet published)
 
 Capture. Correct. Replay.
 
-First candidate for item-level recovery of sequential Spring Batch processor skips. Explicitly enroll a step, capture rejected input, review and correct a selected payload, then replay only eligible rejected records. Successful original rows are not rerun.
+First version prepared for item-level recovery of sequential Spring Batch processor skips. Explicitly enroll a step, capture rejected input, review and correct a selected payload, then replay only eligible rejected records. Successful original rows are not rerun.
 
 ## Highlights
 - Licensed under Apache License 2.0; full text in the repository and binary JARs.
@@ -15,9 +15,9 @@ First candidate for item-level recovery of sequential Spring Batch processor ski
 - Independent CSV applications for both memory and PostgreSQL; [quick start](quickstart.md), [API guide](api.md), [SQL dialects](sql-dialects.md) and verified quality reports.
 
 ## Artifacts planned for publication
-The parent POM plus core, storage-memory, storage-jdbc, spring-batch and spring-boot-starter, each library with binary, sources and Javadoc. No examples, coverage, benchmark or contract-test JAR published in this first release. Coordinates will be io.github.hamzador at version 0.1.0 once authorized. Until then install the repository locally at 0.1.0-SNAPSHOT.
+The parent POM plus core, storage-memory, storage-jdbc, spring-batch and spring-boot-starter, each library with binary, sources and Javadoc. No examples, coverage, benchmark or contract-test JAR published in this first release. Coordinates are io.github.hamzador at version 0.1.0 in the release checkout. Until publication, install locally; do not assume Maven Central resolves these coordinates.
 
 ## Limits and operational requirements
 Memory is bounded and volatile; it does not join chunk transactions or roll back handler effects. JDBC guarantees require the same physical transaction for the host chunk and local replay writes. No guarantee for remote effects, read/write skips, remote/partitioned steps, cross-database atomicity, older Spring Batch versions, or SQL engines outside the tested matrix. Host owns authorization, data retention, scheduling, safe business validation and compatible migrations.
 
-No tag, official signature, upload or release date has been approved. See [release checklist](release-checklist.md) and [review](release-review.md).
+The owner signed and verified an earlier rehearsal. Rebuild and sign the final commit; v0.1.0 is the planned SCM tag only and has not been created. No upload or release date has been approved. See [release checklist](release-checklist.md) and [review](release-review.md).
