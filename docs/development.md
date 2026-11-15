@@ -10,7 +10,7 @@
 ./mvnw -B clean verify
 ```
 
-On Windows use `mvnw.cmd`. Docker is required for verify; test runs only unit tests. CI runs the release-preparation clean install on Linux and uploads XML reports. No deployment or release workflow is enabled; Apache-2.0 is adopted; no publishing credentials are needed. CI uses an isolated temporary Maven repository for non-SNAPSHOT artifacts; no unofficial 0.1.0 is cached between jobs.
+On Windows use `mvnw.cmd`. Docker is required for verify; test runs only unit tests. CI runs the release-preparation clean install on Linux and uploads XML reports. No deployment or release workflow is enabled; Apache-2.0 is adopted; no publishing credentials are needed. CI uses a fresh hosted runner without Maven dependency caching, so no unofficial 0.1.0 is cached between jobs.
 
 Core capture, correction, replay, JDBC rollback/restart and concurrency tests are implemented. Bounded memory, common contracts, dialect generation and database-free Spring Batch integration are implemented; all four JDBC backends are tested. See [storage](storage.md) and the approved [roadmap](roadmap.md).
 
