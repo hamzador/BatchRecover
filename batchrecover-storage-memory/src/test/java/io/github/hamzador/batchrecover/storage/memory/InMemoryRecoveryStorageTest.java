@@ -124,6 +124,26 @@ class InMemoryRecoveryStorageTest {
         assertTrue(fresh.findById(r.id()).isEmpty());
     }
 
+    @Test
+    void shouldValidateUpperCapacityBoundsAndPreserveExactLimits() {
+        assertThrows(IllegalArgumentException.class, () -> new MemoryStorageLimits(100001, 2, 100));
+        assertThrows(IllegalArgumentException.class, () -> new MemoryStorageLimits(1, 0, 100));
+        assertThrows(IllegalArgumentException.class, () -> new MemoryStorageLimits(1, 2, 256L * 1024 * 1024 + 1));
+        assertDoesNotThrow(() -> new MemoryStorageLimits(100000, 100, 256L * 1024 * 1024));
+        assertDoesNotThrow(() -> new MemoryStorageLimits(1, 1, 1));
+    }
+
+    @Test
+    void shouldPreserveAuditTimeWhenClockMovesBackDuringReplay() {
+        initialize(MemoryStorageLimits.DEFAULT);
+        var r = service.capture(request("row:1", "invalid"));
+        service.queue(r.id(), 0, "operator", "replay");
+        var claim = storage.claimNext("app", Duration.ofSeconds(10)).orElseThrow();
+        assertTrue(storage.execute(claim, work -> clock.advance(Duration.ofSeconds(-1))));
+        assertEquals(r.createdAt(), service.get(r.id()).updatedAt());
+        assertEquals(r.createdAt(), storage.findAttempts(r.id()).getFirst().finishedAt());
+    }
+
     private static final class MutableClock extends Clock {
         private final AtomicReference<Instant> time = new AtomicReference<>(Instant.parse("2026-01-01T00:00:00Z"));
         @Override public ZoneId getZone() { return ZoneOffset.UTC; }

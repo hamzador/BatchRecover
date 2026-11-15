@@ -257,4 +257,100 @@ public abstract class RecoveryStorageContract {
         assertEquals(2, storage.findRevisions(r.id()).size());
         assertEquals(2, storage.findAuditEvents(r.id()).size());
     }
+    @Test
+    protected void shouldRejectInvalidQueryAndWorkerArgumentsBeforeChangingState() {
+        var r = queued("row:1", 3);
+        for (String scope : java.util.Arrays.asList(null, "", " ", "x".repeat(129))) {
+            assertThrows(IllegalArgumentException.class, () -> storage.findPending(scope, 1));
+            assertThrows(IllegalArgumentException.class, () -> storage.claimNext(scope, LEASE));
+            assertThrows(IllegalArgumentException.class, () -> storage.reapExpired(scope, n -> DELAY));
+        }
+        assertThrows(IllegalArgumentException.class, () -> storage.findPending("app", 1001));
+        assertThrows(IllegalArgumentException.class, () -> storage.claimNext("app", Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> storage.claimNext("app", Duration.ofDays(1).plusMillis(1)));
+        assertTrue(storage.claimNext("foreign", LEASE).isEmpty());
+        assertEquals(RejectionStatus.QUEUED, service.get(r.id()).status());
+        var claim = storage.claimNext("app", LEASE).orElseThrow();
+        assertThrows(IllegalArgumentException.class, () -> storage.fail(claim, RecoveryFailure.LEASE_EXPIRED, DELAY));
+        assertThrows(IllegalArgumentException.class, () -> storage.fail(claim, RecoveryFailure.HANDLER_FAILED, Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> storage.fail(claim, RecoveryFailure.HANDLER_FAILED, Duration.ofDays(31)));
+        assertFalse(storage.reapExpired("app", n -> DELAY));
+        assertEquals(RejectionStatus.RUNNING, service.get(r.id()).status());
+        assertEquals(AttemptOutcome.RUNNING, storage.findAttempts(r.id()).getFirst().outcome());
+    }
+
+    @Test
+    protected void shouldReturnEmptyHistoryForUnknownIdAndRejectForgedClaim() {
+        var missing = java.util.UUID.randomUUID();
+        assertTrue(storage.findById(missing).isEmpty());
+        assertTrue(storage.findRevisions(missing).isEmpty());
+        assertTrue(storage.findAuditEvents(missing).isEmpty());
+        assertTrue(storage.findAttempts(missing).isEmpty());
+        var fake = new RecoveryClaim(missing, java.util.UUID.randomUUID(), "app", 0, 1);
+        assertFalse(storage.execute(fake, work -> fail("Missing claim executed")));
+        assertTrue(storage.fail(fake, RecoveryFailure.HANDLER_FAILED, DELAY).isEmpty());
+        var r = queued("row:1", 3);
+        var claim = storage.claimNext("app", LEASE).orElseThrow();
+        var wrongRevision = new RecoveryClaim(r.id(), claim.leaseToken(), "app", 1, claim.attemptNumber());
+        assertFalse(storage.execute(wrongRevision, work -> fail("Wrong revision executed")));
+        assertTrue(storage.fail(wrongRevision, RecoveryFailure.HANDLER_FAILED, DELAY).isEmpty());
+        assertEquals(RejectionStatus.RUNNING, service.get(r.id()).status());
+        assertTrue(storage.execute(claim, work -> {}));
+    }
+
+    @Test
+    protected void shouldRejectConflictingHandlerAndPreserveOriginalCapture() {
+        var req = request("app", "row:1", "bad", 3);
+        var r = service.capture(req);
+        var changed = new CaptureRequest(req.identity(), req.jobExecutionId(), req.stepExecutionId(),
+                "other-handler", req.errorCode(), req.category(), req.payload(), req.maxAttempts());
+        assertThrows(CaptureConflictException.class, () -> service.capture(changed));
+        assertEquals(r, service.get(r.id()));
+        assertEquals(1, storage.findRevisions(r.id()).size());
+        assertEquals(1, storage.findAuditEvents(r.id()).size());
+    }
+
+    @Test
+    protected void shouldRejectMismatchedCaptureRevisionAndAuditWithoutWriting() {
+        var req = request("app", "row:1", "bad", 3);
+        java.time.Instant now = clock().instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var r = Rejection.capture(java.util.UUID.randomUUID(), req, now);
+        var id = r.id();
+        var valid = new PayloadRevision(id, 0, req.payload(), "system", "capture", now);
+        var audit = new AuditEvent(java.util.UUID.randomUUID(), id, 0, AuditAction.CAPTURED,
+                "system", "capture", null, RejectionStatus.PENDING, now);
+        for (var wrong : List.of(
+                new PayloadRevision(id, 1, req.payload(), "system", "capture", now),
+                new PayloadRevision(java.util.UUID.randomUUID(), 0, req.payload(), "system", "capture", now),
+                new PayloadRevision(id, 0, new ReplayPayload("other", 1, "bad"), "system", "capture", now))) {
+            assertThrows(IllegalArgumentException.class, () -> storage.capture(r, wrong, audit));
+        }
+        var foreignAudit = new AuditEvent(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(), 0, AuditAction.CAPTURED,
+                "system", "capture", null, RejectionStatus.PENDING, now);
+        var wrongTime = new AuditEvent(java.util.UUID.randomUUID(), id, 0, AuditAction.CAPTURED,
+                "system", "capture", null, RejectionStatus.PENDING, now.plusSeconds(1));
+        assertThrows(IllegalArgumentException.class, () -> storage.capture(r, valid, foreignAudit));
+        assertThrows(IllegalArgumentException.class, () -> storage.capture(r, valid, wrongTime));
+        assertTrue(storage.findPending("app", 1).isEmpty());
+        assertTrue(storage.findRevisions(id).isEmpty());
+        assertTrue(storage.findAuditEvents(id).isEmpty());
+    }
+
+    @Test
+    protected void shouldRejectInvalidCorrectionPayloadWithoutChangingSnapshot() {
+        var r = service.capture(request("app", "row:1", "bad", 3));
+        var updated = r.correct(r.updatedAt());
+        var audit = new AuditEvent(java.util.UUID.randomUUID(), r.id(), 1, AuditAction.CORRECTED,
+                "operator", "fix", RejectionStatus.PENDING, RejectionStatus.PENDING, r.updatedAt());
+        for (var invalid : List.of(
+                new PayloadRevision(java.util.UUID.randomUUID(), 1, new ReplayPayload("customer", 1, "fixed"), "operator", "fix", r.updatedAt()),
+                new PayloadRevision(r.id(), 0, new ReplayPayload("customer", 1, "fixed"), "operator", "fix", r.updatedAt()),
+                new PayloadRevision(r.id(), 1, new ReplayPayload("other", 1, "fixed"), "operator", "fix", r.updatedAt()))) {
+            assertThrows(IllegalArgumentException.class, () -> storage.save(updated, 0, java.util.Optional.of(invalid), audit));
+        }
+        assertThrows(IllegalArgumentException.class, () -> storage.save(updated, 0, java.util.Optional.empty(), audit));
+        assertEquals(r, service.get(r.id()));
+        assertEquals(1, storage.findRevisions(r.id()).size());
+        assertEquals(1, storage.findAuditEvents(r.id()).size());
+    }
 }

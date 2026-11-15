@@ -77,4 +77,15 @@ class DomainValidationTest {
         assertThrows(IllegalArgumentException.class, () -> new ReplayPayload("type", 0, "{}"));
         assertEquals("ReplayPayload[typeId=type, schemaVersion=1, encoded=<redacted>]", PAYLOAD.toString());
     }
+    @Test
+    void shouldValidateRevisionAndIdentityBoundaries() {
+        var revision = new PayloadRevision(ID, 0, PAYLOAD, "a".repeat(128), "r".repeat(512), NOW);
+        assertEquals(0, revision.revision());
+        assertEquals(PAYLOAD, revision.payload());
+        assertThrows(IllegalArgumentException.class, () -> new PayloadRevision(ID, -1, PAYLOAD, "actor", "reason", NOW));
+        assertThrows(IllegalArgumentException.class, () -> new PayloadRevision(ID, 0, PAYLOAD, "a".repeat(129), "reason", NOW));
+        assertThrows(IllegalArgumentException.class, () -> new PayloadRevision(ID, 0, PAYLOAD, "actor", "r".repeat(513), NOW));
+        assertThrows(IllegalArgumentException.class, () -> new CaptureRequest(IDENTITY, -1, 0, "handler", "ERROR", ErrorCategory.UNKNOWN, PAYLOAD, 1));
+        assertThrows(IllegalArgumentException.class, () -> new CaptureRequest(IDENTITY, 0, -1, "handler", "ERROR", ErrorCategory.UNKNOWN, PAYLOAD, 1));
+    }
 }
