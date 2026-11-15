@@ -6,8 +6,8 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 | --- | --- | --- |
 | 0–4 | Foundation, domain, JDBC, Spring Batch capture, recovery engine | Merged |
 | 5 | Starter, JaCoCo, OSV, SBOM, local unsigned staging | Merged; 84 Java tests, 94% lines, 70.6% branches |
-| 6 | Generic storage capabilities, bounded memory, optional JDBC, shared tests | Implementation under review |
-| 7 | Extensible JDBC dialects and schema generation | Planned |
+| 6 | Generic storage capabilities, bounded memory, optional JDBC, shared tests | Merged; 118 Java tests, 95.1% lines, 71.6% branches |
+| 7 | Extensible JDBC dialects and schema generation | Implementation under review |
 | 8 | Quality, mutation tests, performance and dependency footprint | Planned |
 | 9 | Developer experience and examples | Planned |
 | 10 | Release 0.1.0 after owner approval | Planned |
@@ -20,7 +20,7 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 
 ## Sprint 7 — JDBC dialects
 - Shared SQL schema model, versioned migration generation, metadata-based dialect resolution, explicit custom dialect extension.
-- PostgreSQL remains the only currently validated SQL backend. Target PostgreSQL, MySQL, Oracle and H2 for 0.1.0, only if verified individually. MariaDB and SQL Server targeted for 0.2.0; other dialects by demand.
+- PostgreSQL is the previously validated SQL backend. Sprint 7 adds MySQL 8.4, Oracle Free 23 and native H2 2.4 targets; validate each against CI before advertising compatibility. MariaDB and SQL Server targeted for 0.2.0; other dialects by demand.
 - Host supplies DataSource and drivers, no bundled vendor drivers. Verify real transactional semantics (locks, UUID/time types, constraints, concurrency, rollback and restart). Unsupported engines fail clearly; no generic unsafe SQL fallback.
 
 ## Sprint 8 — Quality

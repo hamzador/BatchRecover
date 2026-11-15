@@ -18,6 +18,7 @@ batchrecover:
   application-scope: customer-app
   storage:
     type: jdbc
+    dialect: auto
   max-attempts: 3
   lease-duration: 30s
   initial-retry-delay: 1s
@@ -75,3 +76,5 @@ Timer count measures poll/reap calls; total time includes repository work. Calli
 ## Operational boundaries
 
 Secure stored payloads and audit metadata, manage access to the local API and database, and synchronize host clocks with PostgreSQL. BatchRecover does not supply authentication, arbitrary data masking, automatic payload encryption, or remote exactly-once semantics. No production certification. Review the [release checklist](release-checklist.md) before publishing.
+
+For JDBC dialect detection, explicit configuration, custom extensions and offline generation of migrations, see [SQL dialects](sql-dialects.md). A driver must be supplied by the host.
