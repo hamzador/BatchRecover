@@ -38,7 +38,7 @@ jobs:
       - name: Generate dependency SBOM
         run: >
           ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
-          -DincludeTestScope=true -DoutputReactorProjects=false -DskipNotDeployed=false
+          -DincludeTestScope=true -DoutputReactorProjects=false -Dcyclonedx.skipNotDeployed=false
           -Dcyclonedx.skipAttach=true -DoutputFormat=json
       - name: Audit known dependency vulnerabilities
         run: python3 scripts/audit_dependencies.py target/bom.json --output target/osv-report.json

@@ -7,7 +7,7 @@ This sprint prepares a local candidate only. **No publication, upload, tag or Gi
 ```sh
 ./mvnw -B -ntp -Prelease-preparation clean install
 ./mvnw -B -ntp org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom \
-  -DincludeTestScope=true -DoutputReactorProjects=false -DskipNotDeployed=false \
+  -DincludeTestScope=true -DoutputReactorProjects=false -Dcyclonedx.skipNotDeployed=false \
   -Dcyclonedx.skipAttach=true -DoutputFormat=json
 python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/audit_dependencies.py target/bom.json --output target/osv-report.json
@@ -26,7 +26,8 @@ CycloneDX produces a reactor dependency SBOM including test dependencies. The OS
 ## Owner decisions and prepublication gates
 
 - [ ] Adopt a license (Apache-2.0 proposed) explicitly; add full LICENSE and accurate POM license metadata. Review dependency license obligations.
-- [ ] Sign into https://central.sonatype.com with the owner's GitHub account; verify that io.github.hamzador is listed as Verified under View Namespaces. GitHub login often provisions this namespace automatically; follow the official [namespace instructions](https://central.sonatype.org/register/namespace/) if it is missing. Confirm identity and developer metadata; do not invent contact details.
+- [x] Namespace io.github.hamzador is listed as Verified in the owner's Central Portal (owner-provided screenshot, 2026-11-15). This is not an authenticated API validation or upload authorization.
+- [ ] Confirm developer metadata and identity; do not invent contact details.
 - [ ] Review the security report and threat model; resolve applicable advisories and document any risk acceptance. Perform a source code/secret and build-supply-chain review.
 - [ ] Review public API compatibility, transaction conditions, integration guide and example on an independent application.
 - [ ] Select version 0.1.0 (non-SNAPSHOT) and update all reactor versions/tag metadata after approval.
