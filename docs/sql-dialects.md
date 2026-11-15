@@ -1,6 +1,6 @@
 # JDBC dialects and offline migrations (Sprint 7)
 
-The JDBC adapter remains optional and uses the host DataSource and JdbcTransactionManager. No vendor driver is a production dependency. The target matrix is PostgreSQL 16, MySQL 8.4, Oracle Database Free 23, H2 2.4 (native mode). Support for additional versions/engines is not implied by passing these tests. The actual results of the PR CI determine the verified matrix.
+The JDBC adapter remains optional and uses the host DataSource and JdbcTransactionManager. No vendor driver is a production dependency. The validated matrix is PostgreSQL 16, MySQL 8.4, Oracle Database Free 23, H2 2.4 (native mode). Support for additional versions/engines is not implied by passing these tests. The Sprint 8 real-engine contract tests and load tests passed on these versions; see the [quality CI](https://github.com/hamzador/BatchRecover/actions/runs/43699176988).
 
 ## Configuration
 

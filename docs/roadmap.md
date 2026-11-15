@@ -8,8 +8,8 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 | 5 | Starter, JaCoCo, OSV, SBOM, local unsigned staging | Merged; 84 Java tests, 94% lines, 70.6% branches |
 | 6 | Generic storage capabilities, bounded memory, optional JDBC, shared tests | Merged; 118 Java tests, 95.1% lines, 71.6% branches |
 | 7 | Extensible JDBC dialects and schema generation | Merged; 167 tests, all four engines validated |
-| 8 | Quality, mutation tests, performance and dependency footprint | Implementation under review |
-| 9 | Developer experience and examples | Planned |
+| 8 | Quality, mutation tests, performance and dependency footprint | Merged; 244 tests, 98.34% lines, 91.10% branches, 93.51% PIT |
+| 9 | Developer experience and examples | Implementation under review |
 | 10 | Release 0.1.0 after owner approval | Planned |
 
 ## Sprint 6 — Generic storage
@@ -20,7 +20,7 @@ Mission: Capture. Correct. Replay. A lightweight Java library for Spring Batch; 
 
 ## Sprint 7 — JDBC dialects
 - Shared SQL schema model, versioned migration generation, metadata-based dialect resolution, explicit custom dialect extension.
-- PostgreSQL is the previously validated SQL backend. Sprint 7 adds MySQL 8.4, Oracle Free 23 and native H2 2.4 targets; validate each against CI before advertising compatibility. MariaDB and SQL Server targeted for 0.2.0; other dialects by demand.
+- PostgreSQL 16, MySQL 8.4, Oracle Free 23 and native H2 2.4 are validated by real-engine CI. MariaDB and SQL Server targeted for 0.2.0; other dialects by demand.
 - Host supplies DataSource and drivers, no bundled vendor drivers. Verify real transactional semantics (locks, UUID/time types, constraints, concurrency, rollback and restart). Unsupported engines fail clearly; no generic unsafe SQL fallback.
 
 ## Sprint 8 — Quality
@@ -30,7 +30,7 @@ See [quality guide](quality.md) for the actual report commands, regression basel
 - English camelCase test names; Mockito @Mock, @InjectMocks and @Captor when appropriate; @BeforeEach for fixtures. Measure JAR size, transitive dependencies, memory and throughput; assess PIT, JMH and static analysis without runtime baggage.
 
 ## Sprint 9 — Developer experience
-Document public API/Javadoc, quick start without a database, supported JDBC examples, migration and custom extension guide. Explicit listener registration and host-owned worker scheduling remain. Validate independent application integrations.
+Document public API/Javadoc, runnable independent CSV consumers for memory and PostgreSQL, quick start, migration and custom extension guide. Explicit listener registration and host-owned worker scheduling remain. Validate independent application integrations.
 
 ## Sprint 10 — Release
 CI green, quality gates met, review applicable vulnerabilities and licenses, validate namespace and signed local Central bundle. Owner must approve license and publication separately. Keep 0.1.0-SNAPSHOT until release approval; no Maven Central upload.

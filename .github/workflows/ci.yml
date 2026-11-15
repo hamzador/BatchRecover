@@ -26,6 +26,11 @@ jobs:
           cache: maven
       - name: Verify reactor
         run: ./mvnw -B -ntp -Prelease-preparation clean install
+      - name: Build and test independent consumer applications
+        run: |
+          ./mvnw -B -ntp -f consumer-examples/memory/pom.xml clean verify
+          ./mvnw -B -ntp -f consumer-examples/jdbc/pom.xml clean verify
+          java -jar consumer-examples/memory/target/batchrecover-memory-consumer-1.0.0-SNAPSHOT.jar
       - name: Verify standalone memory and JDBC consumer dependencies
         run: python3 scripts/check_memory_consumer.py
       - name: Test dependency audit script

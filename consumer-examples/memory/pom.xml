@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.9</version>
+        <relativePath/>
+    </parent>
+    <groupId>example.consumer</groupId>
+    <artifactId>batchrecover-memory-consumer</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <properties>
+        <java.version>21</java.version>
+        <batchrecover.version>0.1.0-SNAPSHOT</batchrecover.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+    <dependencies>
+        <dependency><groupId>io.github.hamzador</groupId><artifactId>batchrecover-spring-boot-starter</artifactId><version>${batchrecover.version}</version></dependency>
+
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions><execution><goals><goal>repackage</goal></goals></execution></executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
