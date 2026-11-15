@@ -199,11 +199,19 @@ public abstract class RecoveryStorageContract {
                                 TimeUnit.MILLISECONDS.sleep(5);
                                 continue;
                             }
-                            boolean executed = storage.execute(claim.orElseThrow(), work -> {
-                                assertTrue(expected.contains(work.context().idempotencyKey()));
-                                assertEquals(1, calls.merge(work.context().idempotencyKey(), 1, Integer::sum));
-                            });
-                            assertTrue(executed);
+                            // SKIP LOCKED may transiently return false without invoking a callback.
+                            // Retry only this same fenced token, never start another attempt here.
+                            var reserved = claim.orElseThrow();
+                            boolean executed = false;
+                            long lockDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+                            do {
+                                executed = storage.execute(reserved, work -> {
+                                    assertTrue(expected.contains(work.context().idempotencyKey()));
+                                    assertEquals(1, calls.merge(work.context().idempotencyKey(), 1, Integer::sum));
+                                });
+                                if (!executed) TimeUnit.MILLISECONDS.sleep(5);
+                            } while (!executed && System.nanoTime() < lockDeadline);
+                            assertTrue(executed, "Claim could not be executed within five seconds");
                             completed.incrementAndGet();
                         }
                     } catch (InterruptedException ex) {
@@ -216,6 +224,7 @@ public abstract class RecoveryStorageContract {
             for (var future : futures) future.get(150, TimeUnit.SECONDS);
         } finally {
             pool.shutdownNow();
+            assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS), "Worker threads did not terminate");
         }
         assertEquals(count, completed.get());
         assertEquals(expected, calls.keySet());

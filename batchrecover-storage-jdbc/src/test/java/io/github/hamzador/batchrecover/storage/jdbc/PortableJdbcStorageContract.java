@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
     private DataSource source;
+    private com.zaxxer.hikari.HikariDataSource pool;
     private JdbcTransactionManager manager;
     private JdbcTemplate jdbc;
     protected abstract DataSource dataSource();
@@ -29,7 +30,15 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
 
     @org.junit.jupiter.api.BeforeAll
     void initializeSchema() {
-        source = dataSource();
+        // Reuse bounded real backend connections under contention. Rapid connection churn
+        // can exhaust the small Oracle Free listener's server process budget.
+        var configuration = new com.zaxxer.hikari.HikariConfig();
+        configuration.setDataSource(dataSource());
+        configuration.setMaximumPoolSize(8);
+        configuration.setMinimumIdle(0);
+        configuration.setConnectionTimeout(20_000);
+        pool = new com.zaxxer.hikari.HikariDataSource(configuration);
+        source = pool;
         manager = new JdbcTransactionManager(source);
         jdbc = new JdbcTemplate(source);
         var detected = new JdbcRejectionRepository(source, manager);
@@ -39,6 +48,11 @@ abstract class PortableJdbcStorageContract extends RecoveryStorageContract {
         }
         jdbc.execute("CREATE TABLE dialect_effect (id VARCHAR(36) PRIMARY KEY, payload VARCHAR(100) NOT NULL)"
                 + (expectedDialect() == StandardSqlDialect.MYSQL ? " ENGINE=InnoDB" : ""));
+    }
+
+    @org.junit.jupiter.api.AfterAll
+    void closePool() {
+        if (pool != null) pool.close();
     }
 
     @Override protected RecoveryStorage createStorage() {

@@ -18,6 +18,8 @@ public interface SqlDialect {
     String databaseTimeSql();
     Instant readDatabaseTime(ResultSet rs) throws SQLException;
     String limitClause();
+    /** Whether the dialect permits row limiting and SKIP LOCKED in one SELECT. */
+    default boolean supportsLockingLimit() { return false; }
     default String lockClause() { return " FOR UPDATE SKIP LOCKED"; }
     default boolean hashedIdentity() { return true; }
     default String insertSuffix() { return ""; }

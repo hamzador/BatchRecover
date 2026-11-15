@@ -341,6 +341,11 @@ public final class JdbcRejectionRepository implements RecoveryStorage {
                 : "status = 'QUEUED' AND next_attempt_at <= ? AND attempt_count < max_attempts";
         String order = expired ? "lease_expires_at" : "next_attempt_at";
         Instant cutoff = databaseNow();
+        if (dialect().supportsLockingLimit()) {
+            return query("SELECT * FROM br_rejection WHERE application_scope = ? AND " + predicate
+                            + " ORDER BY " + order + ", id" + dialect().limitClause() + dialect().lockClause(),
+                    REJECTION, scope, cutoff, 1).stream().findFirst();
+        }
         var ids = query("SELECT id FROM br_rejection WHERE application_scope = ? AND " + predicate
                         + " ORDER BY " + order + ", id" + dialect().limitClause(),
                 (rs, row) -> dialect().readUuid(rs, "id"), scope, cutoff, 64);

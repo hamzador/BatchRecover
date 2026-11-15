@@ -69,6 +69,7 @@ public enum StandardSqlDialect implements SqlDialect {
     }
 
     @Override public String limitClause() { return limit; }
+    @Override public boolean supportsLockingLimit() { return this != ORACLE; }
     @Override public boolean hashedIdentity() { return this != POSTGRESQL; }
     @Override public String insertSuffix() {
         return this == POSTGRESQL ? " ON CONFLICT ON CONSTRAINT br_rejection_identity DO NOTHING" : "";
