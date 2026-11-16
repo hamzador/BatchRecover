@@ -12,6 +12,46 @@ MAVEN = ([sys.executable, str(ROOT / "scripts/run_maven_ci.py")]
          if os.environ.get("BATCHRECOVER_TRACE_MAVEN") == "1" else [str(ROOT / "mvnw")])
 MODULES = ("batchrecover-core", "batchrecover-storage-memory", "batchrecover-spring-batch",
            "batchrecover-spring-boot-starter", "batchrecover-storage-jdbc")
+# CLI-invoked maven-dependency-plugin 3.11.0 pulls maven-reporting-impl 4.0.0 →
+# doxia-site-renderer → velocity-tools-generic 3.1 → commons-beanutils 1.9.4.
+DEPENDENCY_PLUGIN_PINS = """
+    <build><pluginManagement><plugins><plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-dependency-plugin</artifactId>
+      <version>3.11.0</version>
+      <dependencies>
+        <dependency><groupId>commons-beanutils</groupId><artifactId>commons-beanutils</artifactId><version>1.11.0</version></dependency>
+        <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><version>2.22.0</version></dependency>
+        <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><version>3.18.0</version></dependency>
+        <dependency><groupId>org.codehaus.plexus</groupId><artifactId>plexus-archiver</artifactId><version>4.16.0</version></dependency>
+        <dependency><groupId>org.iq80.snappy</groupId><artifactId>snappy</artifactId><version>0.5</version></dependency>
+      </dependencies>
+    </plugin></plugins></pluginManagement></build>
+"""
+
+
+def consumer_pom(version, jdbc=False):
+    jdbc_dep = ""
+    if jdbc:
+        jdbc_dep = f"""
+    <dependency>
+      <groupId>io.github.hamzador</groupId>
+      <artifactId>batchrecover-storage-jdbc</artifactId>
+      <version>{version}</version>
+    </dependency>"""
+    return f"""<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>local.preview</groupId><artifactId>consumer</artifactId><version>1</version>
+  <dependencies>
+    <dependency>
+      <groupId>io.github.hamzador</groupId>
+      <artifactId>batchrecover-spring-boot-starter</artifactId>
+      <version>{version}</version>
+    </dependency>{jdbc_dep}
+  </dependencies>
+{DEPENDENCY_PLUGIN_PINS}
+</project>
+"""
 
 
 def main():
@@ -20,14 +60,7 @@ def main():
         folder = Path(temp)
         pom = folder / "pom.xml"
         deps = folder / "runtime.txt"
-        pom.write_text(f"""<project xmlns="http://maven.apache.org/POM/4.0.0">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>local.preview</groupId><artifactId>consumer</artifactId><version>1</version>
-  <dependencies><dependency>
-    <groupId>io.github.hamzador</groupId><artifactId>batchrecover-spring-boot-starter</artifactId>
-    <version>{VERSION}</version>
-  </dependency></dependencies>
-</project>""")
+        pom.write_text(consumer_pom(VERSION))
         subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
                         "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
@@ -45,11 +78,7 @@ def main():
             if required not in tree:
                 raise ValueError(f"Missing expected runtime module: {required}")
         print("Memory consumer: optional JDBC adapter, vendor drivers, web/ORM and test tools absent")
-        content = pom.read_text().replace("</dependencies>", """
-          <dependency><groupId>io.github.hamzador</groupId>
-          <artifactId>batchrecover-storage-jdbc</artifactId>
-          <version>""" + VERSION + """</version></dependency></dependencies>""")
-        pom.write_text(content)
+        pom.write_text(consumer_pom(VERSION, jdbc=True))
         deps.unlink()
         subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
                         "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",

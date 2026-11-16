@@ -419,6 +419,11 @@
                             <artifactId>commons-io</artifactId>
                             <version>${plugin.commons-io}</version>
                         </dependency>
+                        <dependency>
+                            <groupId>commons-beanutils</groupId>
+                            <artifactId>commons-beanutils</artifactId>
+                            <version>${plugin.commons-beanutils}</version>
+                        </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
@@ -455,6 +460,11 @@
                             <groupId>org.iq80.snappy</groupId>
                             <artifactId>snappy</artifactId>
                             <version>${plugin.snappy}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>commons-beanutils</groupId>
+                            <artifactId>commons-beanutils</artifactId>
+                            <version>${plugin.commons-beanutils}</version>
                         </dependency>
                     </dependencies>
                 </plugin>

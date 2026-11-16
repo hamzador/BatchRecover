@@ -68,6 +68,11 @@
                                 <artifactId>snappy</artifactId>
                                 <version>0.5</version>
                             </dependency>
+                            <dependency>
+                                <groupId>commons-beanutils</groupId>
+                                <artifactId>commons-beanutils</artifactId>
+                                <version>1.11.0</version>
+                            </dependency>
                         </dependencies>
                         <configuration>
                             <targetClasses>
