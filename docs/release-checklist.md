@@ -25,7 +25,7 @@ CycloneDX produces a reactor dependency SBOM including test dependencies. The OS
 
 ## Owner decisions and prepublication gates
 
-Record of the review of commit `a9f4402479aa027c21730a79df8b44702061d863`, not approval to publish. The evidence is in [the prepublication report](release-review-0.1.0.md).
+Historical owner-signed candidate review: commit `a9f4402479aa027c21730a79df8b44702061d863`; see [the prepublication report](release-review-0.1.0.md). Updated CI evidence (2026-11-16): PR #18 head `f504e17332ab154026fc7919ad24d17dcb5df366`, [successful run 43841923174](https://github.com/hamzador/BatchRecover/actions/runs/43841923174), merged into `main` as `a565ba929cf6ca6ccbacfae8dd838465a7107960`. This is not final-main CI evidence or approval to publish.
 
 - [x] Owner approved Apache-2.0 (2026-11-15); full license, POM metadata and library license resources verified.
 - [x] Technical third-party inventory: 95 external Maven coordinates with declared licenses; no third-party Java classes bundled; 25 complete Javadoc legal files across five JARs. Attribution review is not a legal opinion.
@@ -35,19 +35,23 @@ Record of the review of commit `a9f4402479aa027c21730a79df8b44702061d863`, not a
 - [ ] Owner confirms developer metadata and identity as published.
 - [x] Reviewed security boundaries, code, current tracked source/configuration, CI evidence and threat/operating limits. OSV: zero matches for 95 scanned Maven coordinates. Pattern-based secret review did not identify an actual credential in the reviewed snapshot.
 - [x] Build-chain review: Maven distribution checksum/versions, read-only Actions, no persisted checkout credentials or publishing execution, independently checked signatures and comparison against CI.
-- [x] Full reachable history Gitleaks scan: 49 commits, no leaks in both initial hardening runs. Repeat on final SHA.
+- [x] Gitleaks reachable-history scan: no leaks reported on the latest successful PR #18 run. Repeat on the final SHA.
 - [ ] Verify hosted secret-scanning/security settings (not accessible from CI).
 - [x] Pin the three GitHub Actions to verified full commits used by the previous successful CI.
-- [ ] Resolve remaining build-chain findings from build-repository OSV and test-image Trivy gates without lowering thresholds; initial runs reported 59 OSV matches and 108 image occurrences; remediation candidate pending CI; review recorded image digests and mutable runner/JDK, plugin coverage limits, Javadoc assets and lack of independent attestation.
+- [x] Build-chain remediation validated in PR #18 CI without lowering thresholds: 95 reactor Maven coordinates and 341 external resolved build coordinates scanned by OSV, zero advisory matches; all four local test images passed Trivy HIGH/CRITICAL gates. See [supply-chain hardening](supply-chain-hardening.md).
+- [ ] Review residual build-chain scope and maintenance: recorded image identities, mutable OS package repositories/runner/JDK, duplicated plugin version pins, multiline Maven debug output, inactive plugins, Javadoc assets and lack of independent attestation. Keep publishing credentials out of diagnostic CI.
+- [ ] Confirm successful full CI on the exact final `main` SHA, including coverage, PIT, SpotBugs, OSV, Trivy, Gitleaks and signing rehearsal.
 - [x] Public API and supported transaction/storage contracts reviewed against source and CI; two independent consumer examples pass. First pre-1.0 release, not a promise of backwards compatibility or production support.
-- [x] Owner authorized version 0.1.0 and planned SCM tag v0.1.0; commit and all library coordinates fixed. Actual tag does not exist.
-- [x] Owner signing key configured; 21 final artifact signatures independently verified using the provided public key in an isolated keyring.
-- [x] Independent GPG key retrieval from keys.openpgp.org passed both initial hardening runs; repeat on final SHA. This is not Central remote bundle validation.
-- [x] Final corrected archive reviewed: exact six POMs, 15 JARs, 21 signatures and 84 checksums; 79 classes, 71 Java sources, 5 CI-identical Javadoc archives; no private signing key in the supplied bundle. Earlier archives superseded.
+- [x] Owner authorized version 0.1.0 and planned SCM tag v0.1.0; library coordinates fixed. Final release commit not yet approved; actual tag not created.
+- [x] Owner signing key configured; 21 signatures on the previous owner-signed candidate independently verified using the provided public key in an isolated keyring.
+- [x] Independent GPG key retrieval from keys.openpgp.org passed the latest PR #18 CI run; repeat on final SHA. This is not Central remote bundle validation.
+- [x] Previous corrected archive reviewed: exact six POMs, 15 JARs, 21 signatures and 84 checksums; 79 classes, 71 Java sources, 5 CI-identical Javadoc archives; no private signing key in the supplied bundle. Historical evidence only.
+- [x] PR #18 disposable-key CI rehearsal passed: 21 artifacts, 21 verified signatures and 84 checksums. The CI ZIP must never be uploaded.
+- [ ] Rebuild, sign with the owner's key and independently verify the final bundle from the approved final SHA; compare the exact artifact allowlist and checksums.
 - [ ] Owner authorizes creation of tag v0.1.0 on the audited commit, and separately authorizes Central upload/publication.
 - [ ] Central remote validation succeeds after authorized upload; release only after owner approval.
 
-**Decision: NO-GO for immediate public release.** The prior signed candidate is still tied to a9f4402; this hardening branch changes the commit and requires new CI validation, final build/signing and owner review. See [supply-chain hardening](supply-chain-hardening.md). Do not tag, deploy, upload, or publish based on this document alone.
+**Decision: GO for merging the validated PR #18; NO-GO for immediate public release.** The prior signed candidate is still tied to a9f4402 and is superseded for release purposes. Main CI, final build/signing and owner review remain required. See [supply-chain hardening](supply-chain-hardening.md). Do not tag, deploy, upload, or publish based on this document alone.
 
 References: [Central requirements](https://central.sonatype.org/publish/requirements/), [Central Maven publishing plugin](https://central.sonatype.org/publish/publish-portal-maven/), [OSV batch API](https://google.github.io/osv.dev/post-v1-querybatch/), [JaCoCo report aggregation](https://www.jacoco.org/jacoco/trunk/doc/report-aggregate-mojo.html).
 

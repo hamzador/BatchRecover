@@ -57,3 +57,15 @@ Next change: replace those nested components by GA in plugin classpaths (maven-f
 [PR 43840160010](https://github.com/hamzador/BatchRecover/actions/runs/43840160010) passed SpotBugs, coverage, PIT, Trivy, reactor OSV and `security-audit`. The expanded build-repository OSV gate failed on one remaining JAR: commons-beanutils 1.9.4 (GHSA-wxr5-93ph-8wr9). Origin: `scripts/check_memory_consumer.py` invokes `maven-dependency-plugin:3.11.0:tree` on a temporary POM that did not inherit reactor pluginManagement. That plugin pulls maven-reporting-impl 4.0.0 → Doxia site renderer → velocity-tools-generic 3.1 → beanutils 1.9.4.
 
 Next change: pin beanutils 1.11.0 (and the same nested plugin replacements) on that CLI-invoked dependency plugin, and on SpotBugs/PIT realms that share reporting-impl. The pin is declared in the temporary POM `<plugins>` section and invoked as `dependency:tree`, because a CLI GAV invocation can ignore pluginManagement `<dependencies>`. No advisory is suppressed. Candidate until the next CI isolated-repository scan. No tag or upload.
+
+## Successful PR #18 remediation (2026-11-16)
+
+[Run 43841923174](https://github.com/hamzador/BatchRecover/actions/runs/43841923174) on PR head `f504e17332ab154026fc7919ad24d17dcb5df366` completed both `verify` and `security-audit` successfully. The PR was merged into `main` as `a565ba929cf6ca6ccbacfae8dd838465a7107960`; the PR run is not evidence of a completed final-main run.
+
+- 248 Java tests (including reactor integration tests and independent consumers), no failures, errors or skips in the test summaries; 20 Python tests passed.
+- JaCoCo aggregate: 98.3% lines, 98.0% instructions, 91.1% branches. PIT: 147/155 mutations killed (94.84%). SpotBugs: zero findings in all five library modules. JMH smoke benchmarks passed.
+- Reactor OSV: 95 external coordinates, zero matches. Isolated build repository: 347 unique JAR coordinates, 341 external coordinates scanned by OSV, zero matches. No report-only flag, advisory suppression or threshold relaxation.
+- The PostgreSQL, MySQL, Oracle and Ryuk local image identity checks and Trivy HIGH/CRITICAL gates passed. Gitleaks found no leaks in the reachable history; owner public-key retrieval passed.
+- Offline disposable-key rehearsal: 21 artifacts, 21 verified signatures, 84 checksums. Not an owner-signed or Central-validated release candidate.
+
+Residual scope: OSV does not prove absence of unknown vulnerabilities or cover inactive plugins; patched image OS repositories, hosted runner and JDK remain mutable; Javadoc assets and independent attestation remain separate concerns. Keep plugin pins synchronized, and improve the Maven debug diagnostic filter (multiline configuration output can persist) before any use of publishing credentials. No production secrets should be introduced into this CI. Revalidate all gates on the final main SHA and rebuild/sign with the owner's key after explicit approval. No tag, deploy, upload or publication authorized.
