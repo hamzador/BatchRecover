@@ -31,7 +31,7 @@ The two added tests check real observable behavior, not internal call counts. No
 ```sh
 ./mvnw -B -ntp \
   -pl batchrecover-core,batchrecover-storage-memory,batchrecover-storage-jdbc,batchrecover-spring-batch,batchrecover-spring-boot-starter \
-  com.github.spotbugs:spotbugs-maven-plugin:4.9.8.1:spotbugs -Dspotbugs.xmlOutput=true
+  com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:spotbugs -Dspotbugs.xmlOutput=true
 ```
 
 Reports cover all five library modules, no broad exclusion filters. Analyzer errors/missing classes fail the report check. Findings are reported by priority; strict CI refuses unreviewed findings. OSV dependency audit and CycloneDX SBOM remain separate, not a complete security audit.
