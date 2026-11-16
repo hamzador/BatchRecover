@@ -12,10 +12,12 @@ MAVEN = ([sys.executable, str(ROOT / "scripts/run_maven_ci.py")]
          if os.environ.get("BATCHRECOVER_TRACE_MAVEN") == "1" else [str(ROOT / "mvnw")])
 MODULES = ("batchrecover-core", "batchrecover-storage-memory", "batchrecover-spring-batch",
            "batchrecover-spring-boot-starter", "batchrecover-storage-jdbc")
-# CLI-invoked maven-dependency-plugin 3.11.0 pulls maven-reporting-impl 4.0.0 →
+# maven-dependency-plugin 3.11.0 pulls maven-reporting-impl 4.0.0 →
 # doxia-site-renderer → velocity-tools-generic 3.1 → commons-beanutils 1.9.4.
-DEPENDENCY_PLUGIN_PINS = """
-    <build><pluginManagement><plugins><plugin>
+# Declared in <plugins>, not pluginManagement: CLI GAV invocations ignore
+# pluginManagement <dependencies>.
+DEPENDENCY_PLUGIN = """
+    <build><plugins><plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-dependency-plugin</artifactId>
       <version>3.11.0</version>
@@ -26,7 +28,7 @@ DEPENDENCY_PLUGIN_PINS = """
         <dependency><groupId>org.codehaus.plexus</groupId><artifactId>plexus-archiver</artifactId><version>4.16.0</version></dependency>
         <dependency><groupId>org.iq80.snappy</groupId><artifactId>snappy</artifactId><version>0.5</version></dependency>
       </dependencies>
-    </plugin></plugins></pluginManagement></build>
+    </plugin></plugins></build>
 """
 
 
@@ -49,7 +51,7 @@ def consumer_pom(version, jdbc=False):
       <version>{version}</version>
     </dependency>{jdbc_dep}
   </dependencies>
-{DEPENDENCY_PLUGIN_PINS}
+{DEPENDENCY_PLUGIN}
 </project>
 """
 
@@ -62,7 +64,7 @@ def main():
         deps = folder / "runtime.txt"
         pom.write_text(consumer_pom(VERSION))
         subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
-                        "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
+                        "dependency:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
         print(tree)
@@ -81,7 +83,7 @@ def main():
         pom.write_text(consumer_pom(VERSION, jdbc=True))
         deps.unlink()
         subprocess.run([*MAVEN, "-B", "-ntp", "-f", str(pom),
-                        "org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree",
+                        "dependency:tree",
                         "-Dscope=runtime", f"-DoutputFile={deps}"], cwd=ROOT, check=True)
         tree = deps.read_text()
         if "io.github.hamzador:batchrecover-storage-jdbc:" not in tree:
