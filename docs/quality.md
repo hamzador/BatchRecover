@@ -12,7 +12,7 @@ Run `./mvnw -B -ntp -Prelease-preparation clean install` with Docker. JaCoCo inc
 ./mvnw -B -ntp -pl batchrecover-core -Pmutation org.pitest:pitest-maven:mutationCoverage
 ```
 
-PIT 1.22.0 and JUnit-platform plugin 1.2.3 operate on all core domain classes plus RetryPolicy and RecoverySettings. Standard default mutators; no exclusion of uncovered logic to inflate results. HTML/XML reports in core target/pit-reports. Killed mutations / all generated mutations is the conservative score (timeouts are not counted as killed). Investigate survivors, uncovered and timed-out mutations rather than asserting the same implementation. This is a developer-time plugin; it is not included in published dependencies.
+PIT 1.30.2 and JUnit-platform plugin 1.2.3 operate on all core domain classes plus RetryPolicy and RecoverySettings. Standard default mutators; no exclusion of uncovered logic to inflate results. HTML/XML reports in core target/pit-reports. Killed mutations / all generated mutations is the conservative score (timeouts are not counted as killed). Investigate survivors, uncovered and timed-out mutations rather than asserting the same implementation. This is a developer-time plugin; it is not included in published dependencies.
 
 ### Sprint 8 review of the last validated baseline
 
