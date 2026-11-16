@@ -32,8 +32,27 @@ def mutation(root):
     return counts
 
 
+def _spotbugs_location(bug):
+    line = bug.find("SourceLine[@primary='true']")
+    if line is None:
+        line = bug.find("SourceLine")
+    if line is None:
+        return "unknown location"
+    source = line.attrib.get("sourcefile") or line.attrib.get("classname") or "unknown"
+    start = line.attrib.get("start")
+    return f"{source}:{start}" if start else source
+
+
+def _spotbugs_finding(bug):
+    bug_type = bug.attrib.get("type", "UNKNOWN")
+    message = (bug.findtext("ShortMessage") or "").strip()
+    detail = f"{bug_type} at {_spotbugs_location(bug)}"
+    return f"{detail} ({message})" if message else detail
+
+
 def spotbugs(root):
     reports = {}
+    findings = {}
     for module in MODULES:
         doc = ET.parse(root / module / "target/spotbugsXml.xml").getroot()
         bugs = doc.findall(".//BugInstance")
@@ -42,7 +61,8 @@ def spotbugs(root):
         if errors:
             raise ValueError(f"Incomplete SpotBugs analysis in {module}: {len(errors)} errors/missing classes")
         reports[module] = Counter(bug.attrib.get("priority", "unknown") for bug in bugs)
-    return reports
+        findings[module] = [_spotbugs_finding(bug) for bug in bugs]
+    return reports, findings
 
 
 def benchmarks(root):
@@ -62,7 +82,7 @@ def main():
     args = parser.parse_args()
     cov = coverage(ROOT)
     mutations = mutation(ROOT)
-    bugs = spotbugs(ROOT)
+    bugs, findings = spotbugs(ROOT)
     measured = benchmarks(ROOT)
     failures = []
     print("### Quality hardening")
@@ -80,6 +100,8 @@ def main():
         failures.append("Mutation analysis has execution errors")
     for module, counts in bugs.items():
         print(f"- SpotBugs {module}: {sum(counts.values())} findings (priorities {dict(counts)})")
+        for finding in findings[module]:
+            print(f"  - {finding}")
         if counts:
             print(f"::warning::{module} SpotBugs findings require review")
             if args.strict:

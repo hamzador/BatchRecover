@@ -43,6 +43,12 @@ class RejectionServiceTest {
     }
 
     @Test
+    void shouldRejectNullConstructorDependencies() {
+        assertThrows(NullPointerException.class, () -> new RejectionService(null, clock));
+        assertThrows(NullPointerException.class, () -> new RejectionService(repository, null));
+    }
+
+    @Test
     void shouldCapturePendingRejectionWithOriginalRevisionAndAudit() {
         when(clock.instant()).thenReturn(NOW);
         when(repository.capture(any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));

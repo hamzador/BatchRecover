@@ -12,7 +12,7 @@ Run `./mvnw -B -ntp -Prelease-preparation clean install` with Docker. JaCoCo inc
 ./mvnw -B -ntp -pl batchrecover-core -Pmutation org.pitest:pitest-maven:mutationCoverage
 ```
 
-PIT 1.22.0 and JUnit-platform plugin 1.2.3 operate on all core domain classes plus RetryPolicy and RecoverySettings. Standard default mutators; no exclusion of uncovered logic to inflate results. HTML/XML reports in core target/pit-reports. Killed mutations / all generated mutations is the conservative score (timeouts are not counted as killed). Investigate survivors, uncovered and timed-out mutations rather than asserting the same implementation. This is a developer-time plugin; it is not included in published dependencies.
+PIT 1.30.2 and JUnit-platform plugin 1.2.3 operate on all core domain classes plus RetryPolicy and RecoverySettings. Standard default mutators; no exclusion of uncovered logic to inflate results. HTML/XML reports in core target/pit-reports. Killed mutations / all generated mutations is the conservative score (timeouts are not counted as killed). Investigate survivors, uncovered and timed-out mutations rather than asserting the same implementation. This is a developer-time plugin; it is not included in published dependencies.
 
 ### Sprint 8 review of the last validated baseline
 
@@ -31,7 +31,7 @@ The two added tests check real observable behavior, not internal call counts. No
 ```sh
 ./mvnw -B -ntp \
   -pl batchrecover-core,batchrecover-storage-memory,batchrecover-storage-jdbc,batchrecover-spring-batch,batchrecover-spring-boot-starter \
-  com.github.spotbugs:spotbugs-maven-plugin:4.9.8.1:spotbugs -Dspotbugs.xmlOutput=true
+  com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:spotbugs -Dspotbugs.xmlOutput=true
 ```
 
 Reports cover all five library modules, no broad exclusion filters. Analyzer errors/missing classes fail the report check. Findings are reported by priority; strict CI refuses unreviewed findings. OSV dependency audit and CycloneDX SBOM remain separate, not a complete security audit.

@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /** Local trusted API; authorization, sanitization and payload semantics belong to the caller. */
-public class RejectionService {
+public final class RejectionService {
     private final RejectionRepository repository;
     private final Clock clock;
 
